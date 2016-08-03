@@ -283,8 +283,8 @@ my $d = shift ;
 my $cutplane = [0, $a, $b, $c] ;
 #
 my @faces = [@face] ;
-for ($i=0; $i<@planerot; $i++) {
-   my $q = mul($planerot[$i], mul($cutplane, invrot($planerot[$i]))) ;
+for ($i=0; $i<@rotations; $i++) {
+   my $q = mul($rotations[$i], mul($cutplane, invrot($rotations[$i]))) ;
    my @nfaces = () ;
    for ($j=0; $j<@faces; $j++) {
       my @face = @{$faces[$j]} ;
