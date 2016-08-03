@@ -46,6 +46,16 @@ sub dot {
    my $b = shift ;
    return $a->[1]*$b->[1]+$a->[2]*$b->[2]+$a->[3]*$b->[3] ;
 }
+sub smul {
+   my $a = shift ;
+   my $m = shift ;
+   return [$a->[0]*$m, $a->[1]*$m, $a->[2]*$m, $a->[3]*$m] ;
+}
+sub sum {
+   my $a = shift ;
+   my $b = shift ;
+   return [$a->[0]+$b->[0], $a->[1]+$b->[1], $a->[2]+$b->[2], $a->[3]+$b->[3]] ;
+}
 #
 #   We start with cube rotation generators.  I don't see how conjugation
 #   by these will retain enough information.
@@ -84,6 +94,12 @@ sub icosahedral {
 sub invrot {
    my $a = shift ;
    return [$a->[0], -$a->[1], -$a->[2], -$a->[3]] ;
+}
+sub side {
+   my $a = shift ;
+   return 1 if $a > $eps ;
+   return -1 if $a < -$eps ;
+   return 0 ;
 }
 #
 #   Q and -Q are the same rotation.  If we are looking at the space we
@@ -256,12 +272,64 @@ while (1) {
    }
    last if !$changed ;
 }
+#
+#   Now do the cuts.  We split the face into multiple faces based on the
+#   rotations of the cuts.
+#
+my $a = shift ;
+my $b = shift ;
+my $c = shift ;
+my $d = shift ;
+my $cutplane = [0, $a, $b, $c] ;
+#
+my @faces = [@face] ;
+for ($i=0; $i<@planerot; $i++) {
+   my $q = mul($planerot[$i], mul($cutplane, invrot($planerot[$i]))) ;
+   my @nfaces = () ;
+   for ($j=0; $j<@faces; $j++) {
+      my @face = @{$faces[$j]} ;
+      my @inout = map { side(dot($_, $q) - $d) } @face ;
+      my $seen = 0 ;
+      for (@inout) {
+         $seen |= (1 << ($_ + 1)) ;
+      }
+      if (($seen & 5) == 5) { # saw both sides
+         for (my $s=-1; $s <= 1; $s += 2) {
+            my @nface = () ;
+            for ($k=0; $k<@face; $k++) {
+               if ($inout[$k] == $s || $inout[$k] == 0) {
+                  push @nface, $face[$k] ;
+               }
+               my $kk = ($k + 1) % @face ;
+               if ($inout[$k] + $inout[$kk] == 0 && $inout[$k] != 0) {
+                  my $vk = dot($face[$k], $q) - $d ;
+                  my $vkk = dot($face[$kk], $q) - $d ;
+                  my $r = $vk / ($vk - $vkk) ;
+                  my $pt = sum(smul($face[$k], (1-$r)), smul($face[$kk], $r)) ;
+                  push @nface, $pt ;
+               }
+            }
+            push @nfaces, [@nface] ;
+         }
+      } else { # no cut
+         push @nfaces, [@face] ;
+      }
+   }
+   @faces = @nfaces ;
+}
+print "// Total faces now is ", scalar @faces, "\n" ;
+#
+#   Print the result.
+#
 print "f([\n" ;
 for ($i=0; $i<@planerot; $i++) {
    print " [" ;
-   for ($j=0; $j<@face; $j++) {
-      my $q = mul($planerot[$i], mul($face[$j], invrot($planerot[$i]))) ;
-      print "[$q->[1],$q->[2],$q->[3]]," ;
+   for ($k=0; $k<@faces; $k++) {
+      my @face = @{$faces[$k]} ;
+      for ($j=0; $j<@face; $j++) {
+         my $q = mul($planerot[$i], mul($face[$j], invrot($planerot[$i]))) ;
+         print "[$q->[1],$q->[2],$q->[3]]," ;
+      }
    }
    print "],\n" ;
 }
