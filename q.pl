@@ -323,14 +323,14 @@ print "// Total faces now is ", scalar @faces, "\n" ;
 #
 print "f([\n" ;
 for ($i=0; $i<@planerot; $i++) {
-   print " [" ;
    for ($k=0; $k<@faces; $k++) {
+      print " [" ;
       my @face = @{$faces[$k]} ;
       for ($j=0; $j<@face; $j++) {
          my $q = mul($planerot[$i], mul($face[$j], invrot($planerot[$i]))) ;
          print "[$q->[1],$q->[2],$q->[3]]," ;
       }
+      print "],\n" ;
    }
-   print "],\n" ;
 }
 print "]);\n" ;

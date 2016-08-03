@@ -1,0 +1,70 @@
+<html><head><title>G2</title>
+<script src="http://localhost/tom/jquery-1.12.4.min.js"></script>
+<script src="http://localhost/tom/three.js"></script>
+<script>
+var renderer = null, scene = null, camera = null, obj = null ;
+var duration = 10000 ;
+var currentTime = Date.now() ;
+function animate() {
+   var now = Date.now() ;
+   var deltat = now - currentTime ;
+   currentTime = now ;
+   var fract = deltat / duration ;
+   var angle = Math.PI * 2 * fract ;
+   obj.rotation.y += angle;
+}
+function run() {
+   requestAnimationFrame(function() { run(); });
+   renderer.render(scene, camera) ;
+   animate() ;
+}
+var myfaces ;
+function f(arr) {
+   myfaces = arr ;
+}
+$(document).ready(function() {
+   var canvas = document.getElementById("webglcanvas") ;
+   renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true}) ;
+   renderer.setSize(canvas.width, canvas.height) ;
+   scene = new THREE.Scene() ;
+   camera =
+         new THREE.PerspectiveCamera(45, canvas.width/canvas.height, 1, 4000) ;
+   scene.add(camera) ;
+   var map = {vertexColors: THREE.VertexColors} ;
+// var material = new THREE.MeshPhongMaterial(map) ;
+   var material = new THREE.MeshBasicMaterial(map) ;
+   var geometry = new THREE.Geometry() ;
+   for (var f=0; f<myfaces.length; f++) {
+      var c = new THREE.Color(Math.random(), Math.random(), Math.random()) ;
+      for (var g=0; g<myfaces[f].length; g++) {
+         var v = 
+      new THREE.Vector3(myfaces[f][g][0], myfaces[f][g][1], myfaces[f][g][2]) ;
+         myfaces[f][g] = geometry.vertices.length  ;
+         geometry.vertices.push(v) ;
+      }
+      for (var g=1; g+1<myfaces[f].length; g++) {
+         var face =
+                new THREE.Face3(myfaces[f][0], myfaces[f][g], myfaces[f][g+1]) ;
+         face.vertexColors[0] = c ;
+         face.vertexColors[1] = c ;
+         face.vertexColors[2] = c ;
+         geometry.faces.push(face) ;
+      }
+   }
+   geometry.computeFaceNormals() ;
+   obj = new THREE.Mesh(geometry, material) ;
+   obj.position.z = -8 ;
+   obj.rotation.x = Math.PI/5 ;
+   obj.rotation.y = Math.PI/5 ;
+   scene.add(obj) ;
+// var light = new THREE.DirectionalLight(0xffffff, 1.5) ;
+// light.position.set(0, 0, 1) ;
+// scene.add(light) ;
+   run() ;
+});
+</script>
+<script src="f.js"></script>
+</head>
+<body>
+<canvas id="webglcanvas" width=600 height=600></canvas>
+</body></html>
