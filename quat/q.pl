@@ -119,8 +119,6 @@ my $nident = [-1, 0, 0, 0] ;
 #
 $eps = 1e-9 ;
 #
-my @q = ($ident, $nident) ;
-#
 #   What symmetry?
 #
 my $sym = shift ;
@@ -135,60 +133,29 @@ if ($sym eq 'cube') {
 } else {
    die "Bad shape" ;
 }
-for ($i=0; $i<@q; $i++) {
-   for ($j=0; $j<@g; $j++) {
-      $ns = mul($g[$j], $q[$i]) ;
-      $seen = 0 ;
-      for ($k=0; $k<@q; $k++) {
-         if (d($ns, $q[$k]) < $eps) {
-            $seen++ ;
-            last ;
+sub generate {
+   my @g = @_ ;
+   my @q = ($ident, $nident) ;
+   my $i ;
+   for (my $i=0; $i<@q; $i++) {
+      for (my $j=0; $j<@g; $j++) {
+         my $ns = mul($g[$j], $q[$i]) ;
+         my $seen = 0 ;
+         for (my $k=0; $k<@q; $k++) {
+            if (d($ns, $q[$k]) < $eps) {
+               $seen++ ;
+               last ;
+            }
+         }
+         if (!$seen) {
+            push @q, $ns ;
          }
       }
-      if (!$seen) {
-         push @q, $ns ;
-# print "@{$ns}\n" ;
-      }
    }
-#  if (($i & ($i - 1)) == 0) {
-#     print "At $i @{$ns}\n" ;
-#  }
+   return @q ;
 }
-print "// Total is ", scalar @q, "\n" ;
-my @rotations = @q ;
 #
-#   Now take the plane arguments.  The origin is always zero.  We can
-#   rotate the planes just by rotating the points.
-#
-my $a = shift ;
-my $b = shift ;
-my $c = shift ;
-my $d = shift ;
-#
-#   Find the unique planes.
-#
-my @planes = () ;
-my @planerot = () ;
-for ($i=0; $i<@rotations; $i++) {
-   my $q = [0, $a, $b, $c] ;
-   my $p = mul(mul($rotations[$i], $q), invrot($rotations[$i])) ;
-   $p->[0] = $d ;
-   my $seen = 0 ;
-   for ($j=0; $j<@planes; $j++) {
-      if (d($p, $planes[$j]) <= $eps) {
-         $seen++ ;
-         last ;
-      }
-   }
-   if (!$seen) {
-      push @planes, $p ;
-      push @planerot, $rotations[$i] ;
-   }
-}
-$nplanes = @planes ;
-print "// Total planes is $nplanes\n" ;
-#
-#   Solving three planes using linear algebra.
+#   Solving three planes using linear algebra.  First a 3x3 determinant.
 #
 sub det3x3 {
    my $a00 = shift ;
@@ -204,10 +171,15 @@ sub det3x3 {
           $a01 * ($a12 * $a20 - $a10 * $a22) +
           $a02 * ($a10 * $a21 - $a11 * $a20) ;
 }
+#
+#   Find the point at the intersection of three planes, if there is one.
+#
 sub solvethreeplanes {
    my $pi1 = shift ;
    my $pi2 = shift ;
    my $pi3 = shift ;
+   my $planes = shift ;
+   my @planes = @{$planes} ;
    my $p1 = $planes[$pi1] ;
    my $p2 = $planes[$pi2] ;
    my $p3 = $planes[$pi3] ;
@@ -235,43 +207,114 @@ sub solvethreeplanes {
    return [0, $x, $y, $z] ;
 }
 #
+#   Rotate a plane.
+#
+sub rotateplane {
+   my $q = shift ;
+   my $p = shift ;
+   my $t = mul(mul($q, [0, $p->[1], $p->[2], $p->[3]]), invrot($q)) ;
+   $t->[0] = $p->[0] ;
+   return $t ;
+}
+#
+#   Find the unique planes.  We actually just generate the subgroup of the
+#   rotation group that generates the planes, because from this we can
+#   easily regenerate all the planes.
+#
+sub genuniqueplanes {
+   my $q = shift ;
+   my $rotations = shift ;
+   my @rotations = @{$rotations} ;
+   my @planes = () ;
+   my @planerot = () ;
+   for (my $i=0; $i<@rotations; $i++) {
+      my $p = rotateplane($rotations[$i], $q) ;
+      my $seen = 0 ;
+      for (my $j=0; $j<@planes; $j++) {
+         if (d($p, $planes[$j]) <= $eps) {
+            $seen++ ;
+            last ;
+         }
+      }
+      if (!$seen) {
+         push @planes, $p ;
+         push @planerot, $rotations[$i] ;
+      }
+   }
+   return @planerot ;
+}
+#
+#   From a set of planes, generate a single face.
+#
 #   We pick the first plane as the main one.  We then iterate for all other
 #   pairs of planes, solve for a vertex, and check that vertex against the
 #   other planes.
 #
-my @face = () ;
-for ($i=1; $i<@planes; $i++) {
-   for ($j=$i+1; $j<@planes; $j++) {
-      my $p = solvethreeplanes(0, $i, $j) ;
-      if (defined($p)) {
-         my $seen = 0 ;
-         for ($k=0; $k<@face; $k++) {
-            if (d($p, $face[$k]) < $eps) {
-               $seen++ ;
-               last ;
+sub getface {
+   my @planes = @_ ;
+   my @face = () ;
+   for (my $i=1; $i<@planes; $i++) {
+      for (my $j=$i+1; $j<@planes; $j++) {
+         my $p = solvethreeplanes(0, $i, $j, \@planes) ;
+         if (defined($p)) {
+            my $seen = 0 ;
+            for (my $k=0; $k<@face; $k++) {
+               if (d($p, $face[$k]) < $eps) {
+                  $seen++ ;
+                  last ;
+               }
             }
+            next if $seen ;
+            push @face, $p ;
          }
-         next if $seen ;
-         push @face, $p ;
       }
    }
-}
 #
 #   Sort the points of the face.
 #
-while (1) {
-   my $changed = 0 ;
-   for ($i=0; $i<@face; $i++) {
-      $j = ($i + 1) % @face ;
-      if (dot($planes[0], cross($face[$i], $face[$j])) < 0) {
-         my $t = $face[$i] ;
-         $face[$i] = $face[$j] ;
-         $face[$j] = $t ;
-         $changed = 1 ;
+   while (1) {
+      my $changed = 0 ;
+      for (my $i=0; $i<@face; $i++) {
+         my $j = ($i + 1) % @face ;
+         if (dot($planes[0], cross($face[$i], $face[$j])) < 0) {
+            my $t = $face[$i] ;
+            $face[$i] = $face[$j] ;
+            $face[$j] = $t ;
+            $changed = 1 ;
+         }
       }
+      last if !$changed ;
    }
-   last if !$changed ;
+   return @face ;
 }
+#
+#   First, generate the rotation group.
+#
+my @rotations = generate(@g) ;
+print "// Total is ", scalar @rotations, "\n" ;
+#
+#   For this rotation group, let's figure out the base set of planes,
+#   starting with a plane whose normal is the first generator, and
+#   rotating this by the rotation group.  We use this to define the
+#   default face normal, vertex normal, and edge normal.
+#
+my @base = @{$g[0]} ;
+my @baseplanerot = genuniqueplanes(\@base, \@rotations) ;
+my @baseplanes = map { rotateplane($_, \@base) } @baseplanerot ;
+#
+#   Pull in the actual boundaries.
+#
+my $a = shift ;
+my $b = shift ;
+my $c = shift ;
+my $d = shift ;
+#
+my $boundary = [$d, $a, $b, $c] ;
+my @planerot = genuniqueplanes($boundary, \@rotations) ;
+my @planes = map { rotateplane($_, $boundary) } @planerot ;
+$nplanes = @planes ;
+print "// Total planes is $nplanes\n" ;
+my @face = getface(@planes) ;
 #
 #   Now do the cuts.  We split the face into multiple faces based on the
 #   rotations of the cuts.
