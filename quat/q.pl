@@ -288,6 +288,22 @@ sub getface {
    return @face ;
 }
 #
+#   Normalize:  make the size be 1.
+#
+sub normalize {
+   my $q = shift ;
+   my $s = sqrt(dot($q, $q)) ;
+   return [$q->[0]/$s, $q->[1]/$s, $q->[2]/$s, $q->[3]/$s] ;
+}
+#
+#   To make a normal from a plane or quat, kill the constant, then
+#   normalize.
+#
+sub makenormal {
+   my $q = shift ;
+   return normalize([0, $q->[1], $q->[2], $q->[3]]) ;
+}
+#
 #   First, generate the rotation group.
 #
 my @rotations = generate(@g) ;
@@ -301,6 +317,16 @@ print "// Total is ", scalar @rotations, "\n" ;
 my @base = @{$g[0]} ;
 my @baseplanerot = genuniqueplanes(\@base, \@rotations) ;
 my @baseplanes = map { rotateplane($_, \@base) } @baseplanerot ;
+my @baseface = getface(@baseplanes) ;
+#
+#   From this face we can pick out normals for face, vertex, and edge.
+#
+$facenormal = makenormal($baseplanes[0]) ;
+$edgenormal = makenormal(sum($baseface[0], $baseface[1])) ;
+$vertexnormal = makenormal($baseface[0]) ;
+print "Facenormal @{$facenormal}\n" ;
+print "Edgenormal @{$edgenormal}\n" ;
+print "Vertexnormal @{$vertexnormal}\n" ;
 #
 #   Pull in the actual boundaries.
 #
