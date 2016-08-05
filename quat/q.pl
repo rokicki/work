@@ -304,6 +304,26 @@ sub makenormal {
    return normalize([0, $q->[1], $q->[2], $q->[3]]) ;
 }
 #
+#   Get a description of a plane from the command line.
+#
+sub getplanefromcommandline {
+   my $a = shift @ARGV ;
+   my $b ;
+   my $c ;
+   if ($a eq 'face') {
+      ($a, $b, $c) = @{$facenormal}[1,2,3] ;
+   } elsif ($a eq 'vertex') {
+      ($a, $b, $c) = @{$vertexnormal}[1,2,3] ;
+   } elsif ($a eq 'edge') {
+      ($a, $b, $c) = @{$edgenormal}[1,2,3] ;
+   } else {
+      $b = shift @ARGV ;
+      $c = shift @ARGV ;
+   }
+   my $d = shift @ARGV ;
+   return [$d, $a, $b, $c] ;
+}
+#
 #   First, generate the rotation group.
 #
 my @rotations = generate(@g) ;
@@ -324,18 +344,14 @@ my @baseface = getface(@baseplanes) ;
 $facenormal = makenormal($baseplanes[0]) ;
 $edgenormal = makenormal(sum($baseface[0], $baseface[1])) ;
 $vertexnormal = makenormal($baseface[0]) ;
-print "Facenormal @{$facenormal}\n" ;
-print "Edgenormal @{$edgenormal}\n" ;
-print "Vertexnormal @{$vertexnormal}\n" ;
+print "//Facenormal @{$facenormal}\n" ;
+print "//Edgenormal @{$edgenormal}\n" ;
+print "//Vertexnormal @{$vertexnormal}\n" ;
 #
 #   Pull in the actual boundaries.
 #
-my $a = shift ;
-my $b = shift ;
-my $c = shift ;
-my $d = shift ;
 #
-my $boundary = [$d, $a, $b, $c] ;
+my $boundary = getplanefromcommandline() ;
 my @planerot = genuniqueplanes($boundary, \@rotations) ;
 my @planes = map { rotateplane($_, $boundary) } @planerot ;
 $nplanes = @planes ;
@@ -345,15 +361,12 @@ my @face = getface(@planes) ;
 #   Now do the cuts.  We split the face into multiple faces based on the
 #   rotations of the cuts.
 #
-my $a = shift ;
-my $b = shift ;
-my $c = shift ;
-my $d = shift ;
-my $cutplane = [0, $a, $b, $c] ;
+my $cutplane = getplanefromcommandline() ;
+my $d = $cutplane->[0] ;
 #
 my @faces = [@face] ;
 for ($i=0; $i<@rotations; $i++) {
-   my $q = mul($rotations[$i], mul($cutplane, invrot($rotations[$i]))) ;
+   my $q = rotateplane($rotations[$i], $cutplane) ;
    my @nfaces = () ;
    for ($j=0; $j<@faces; $j++) {
       my @face = @{$faces[$j]} ;
@@ -396,7 +409,7 @@ for ($i=0; $i<@planerot; $i++) {
       print " [" ;
       my @face = @{$faces[$k]} ;
       for ($j=0; $j<@face; $j++) {
-         my $q = mul($planerot[$i], mul($face[$j], invrot($planerot[$i]))) ;
+         my $q = rotateplane($planerot[$i], $face[$j]) ; # really point
          print "[$q->[1],$q->[2],$q->[3]]," ;
       }
       print "],\n" ;

@@ -1,0 +1,6 @@
+2x2x2: cube face 1 face 0
+3x3x3: cube face 1 face 0.3333
+skewb: cube face 1 vertex 0
+helicopter: cube face 1 edge 0.7071
+dino: cube face 1 vertex 0.57735
+penultimate: dodecahedron face 1 face 0
