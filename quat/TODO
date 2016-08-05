@@ -1,0 +1,17 @@
+Presentation
+   Add borders between faces somehow
+
+Simulation
+   Add movement
+   Add scrambling
+   Add solve detection
+
+Computation
+   Identify moves
+   Identify moving "pieces" (collections of faces)
+   Calculate orbits
+   Approximate size of puzzle state
+   Refine size of puzzle state
+   Generate permutation representation
+   Metrics:  OBTM, SSTM, STM
+   Explore distance counts
