@@ -321,6 +321,7 @@ sub getplanefromcommandline {
       $c = shift @ARGV ;
    }
    my $d = shift @ARGV ;
+   $d = eval($d) ;
    return [$d, $a, $b, $c] ;
 }
 #
@@ -351,7 +352,11 @@ print "//Vertexnormal @{$vertexnormal}\n" ;
 #   Pull in the actual boundaries.
 #
 #
-my $boundary = getplanefromcommandline() ;
+my $boundary = [@{$facenormal}] ;
+$boundary->[0] = 1 ;
+if ($ARGV[0] eq 'boundary') {
+   $boundary = getplanefromcommandline() ;
+}
 my @planerot = genuniqueplanes($boundary, \@rotations) ;
 my @planes = map { rotateplane($_, $boundary) } @planerot ;
 $nplanes = @planes ;
@@ -361,43 +366,49 @@ my @face = getface(@planes) ;
 #   Now do the cuts.  We split the face into multiple faces based on the
 #   rotations of the cuts.
 #
-my $cutplane = getplanefromcommandline() ;
-my $d = $cutplane->[0] ;
+my @cutplanes = () ;
+while (@ARGV) {
+   my $cutplane = getplanefromcommandline() ;
+   push @cutplanes, $cutplane ;
+}
 #
 my @faces = [@face] ;
-for ($i=0; $i<@rotations; $i++) {
-   my $q = rotateplane($rotations[$i], $cutplane) ;
-   my @nfaces = () ;
-   for ($j=0; $j<@faces; $j++) {
-      my @face = @{$faces[$j]} ;
-      my @inout = map { side(dot($_, $q) - $d) } @face ;
-      my $seen = 0 ;
-      for (@inout) {
-         $seen |= (1 << ($_ + 1)) ;
-      }
-      if (($seen & 5) == 5) { # saw both sides
-         for (my $s=-1; $s <= 1; $s += 2) {
-            my @nface = () ;
-            for ($k=0; $k<@face; $k++) {
-               if ($inout[$k] == $s || $inout[$k] == 0) {
-                  push @nface, $face[$k] ;
-               }
-               my $kk = ($k + 1) % @face ;
-               if ($inout[$k] + $inout[$kk] == 0 && $inout[$k] != 0) {
-                  my $vk = dot($face[$k], $q) - $d ;
-                  my $vkk = dot($face[$kk], $q) - $d ;
-                  my $r = $vk / ($vk - $vkk) ;
-                  my $pt = sum(smul($face[$k], (1-$r)), smul($face[$kk], $r)) ;
-                  push @nface, $pt ;
-               }
-            }
-            push @nfaces, [@nface] ;
+for my $cutplane (@cutplanes) {
+   my $d = $cutplane->[0] ;
+   for ($i=0; $i<@rotations; $i++) {
+      my $q = rotateplane($rotations[$i], $cutplane) ;
+      my @nfaces = () ;
+      for ($j=0; $j<@faces; $j++) {
+         my @face = @{$faces[$j]} ;
+         my @inout = map { side(dot($_, $q) - $d) } @face ;
+         my $seen = 0 ;
+         for (@inout) {
+            $seen |= (1 << ($_ + 1)) ;
          }
-      } else { # no cut
-         push @nfaces, [@face] ;
+         if (($seen & 5) == 5) { # saw both sides
+            for (my $s=-1; $s <= 1; $s += 2) {
+               my @nface = () ;
+               for ($k=0; $k<@face; $k++) {
+                  if ($inout[$k] == $s || $inout[$k] == 0) {
+                     push @nface, $face[$k] ;
+                  }
+                  my $kk = ($k + 1) % @face ;
+                  if ($inout[$k] + $inout[$kk] == 0 && $inout[$k] != 0) {
+                     my $vk = dot($face[$k], $q) - $d ;
+                     my $vkk = dot($face[$kk], $q) - $d ;
+                     my $r = $vk / ($vk - $vkk) ;
+                     my $pt = sum(smul($face[$k], (1-$r)), smul($face[$kk], $r)) ;
+                     push @nface, $pt ;
+                  }
+               }
+               push @nfaces, [@nface] ;
+            }
+         } else { # no cut
+            push @nfaces, [@face] ;
+         }
       }
+      @faces = @nfaces ;
    }
-   @faces = @nfaces ;
 }
 print "// Total faces now is ", scalar @faces, "\n" ;
 #
