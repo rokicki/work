@@ -386,6 +386,18 @@ sub expandfaces {
    return @nfaces ;
 }
 #
+#   Are two planes the same?  Take into account the fact that the
+#   move normals might be negated, or that they may be multiples of
+#   each other.
+#
+sub sameplane {
+   my $a = normalize(shift) ;
+   my $b = normalize(shift) ;
+   return 1 if d($a, $b) < $eps ;
+   return 1 if d($a, smul($b, -1)) < $eps ;
+   return 0 ;
+}
+#
 #   Print all the faces.
 #
 sub showf {
@@ -451,13 +463,25 @@ while (@ARGV) {
 }
 #
 my @faces = [@face] ;
+my @moveplanes = () ;
 for my $cutplane (@cutplanes) {
    for ($i=0; $i<@rotations; $i++) {
       my $q = rotateplane($rotations[$i], $cutplane) ;
-      @faces = cutfaces($q, @faces) ;
+      $seen = 0 ;
+      for ($j=0; $j<@moveplanes; $j++) {
+         if (sameplane($q, $moveplanes[$j])) {
+            $seen++ ;
+            last ;
+         }
+      }
+      if ($seen == 0) {
+         push @moveplanes, $q ;
+         @faces = cutfaces($q, @faces) ;
+      }
    }
 }
 print "// Faces now is ", scalar @faces, "\n" ;
+print "// Unique move planes is ", scalar @moveplanes, "\n" ;
 @faces = expandfaces(\@planerot, \@faces) ;
 print "// Final total faces now is ", scalar @faces, "\n" ;
 showf(@faces) ;
