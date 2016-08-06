@@ -113,7 +113,6 @@ sub side {
 #   [1, 0, 0, 0].
 #
 my $ident = [1, 0, 0, 0] ;
-my $nident = [-1, 0, 0, 0] ;
 #
 #   Epsilon.
 #
@@ -135,14 +134,16 @@ if ($sym eq 'cube') {
 }
 sub generate {
    my @g = @_ ;
-   my @q = ($ident, $nident) ;
+   my @q = ($ident) ;
    my $i ;
    for (my $i=0; $i<@q; $i++) {
       for (my $j=0; $j<@g; $j++) {
          my $ns = mul($g[$j], $q[$i]) ;
+         my $negns = smul($ns, -1) ;
          my $seen = 0 ;
          for (my $k=0; $k<@q; $k++) {
-            if (d($ns, $q[$k]) < $eps) {
+            if (d($ns, $q[$k]) < $eps ||
+                d($negns, $q[$k]) < $eps) {
                $seen++ ;
                last ;
             }
@@ -505,4 +506,27 @@ for ($i=0; $i<@moveplanes; $i++) {
 }
 my @sizes = map { scalar @{$_} } @moveplanesets ;
 print "// move plane sets: [@sizes]\n" ;
+#
+#   For each set of move planes, find the rotations that are relevant.
+#
+my @moverotations = () ;
+for ($i=0; $i<@rotations; $i++) {
+   my $seen = 0 ;
+   my $q = $rotations[$i] ;
+   next if abs(abs($q->[0])-1) < $eps ;
+   my $qnormal = makenormal($q) ;
+   for ($j=0; $j<@moveplanesets; $j++) {
+      if (sameplane($qnormal, makenormal($moveplanesets[$j][0]))) {
+         push @{$moverotations[$j]}, $q ;
+         $seen++ ;
+         last ;
+      }
+   }
+}
+@sizes = map { scalar @{$_} } @moverotations ;
+print "// move rotation sets: [@sizes]\n" ;
+for ($i=0; $i<@{$moverotations[0]}; $i++) {
+   print "$i: @{$moverotations[0][$i]}\n" ;
+}
+#
 showf(@faces) ;
