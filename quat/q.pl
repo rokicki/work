@@ -484,4 +484,25 @@ print "// Faces now is ", scalar @faces, "\n" ;
 print "// Unique move planes is ", scalar @moveplanes, "\n" ;
 @faces = expandfaces(\@planerot, \@faces) ;
 print "// Final total faces now is ", scalar @faces, "\n" ;
+#
+#   Split moveplanes into a list of parallel planes.
+#
+@moveplanesets = () ;
+for ($i=0; $i<@moveplanes; $i++) {
+   my $seen = 0 ;
+   my $q = $moveplanes[$i] ;
+   my $qnormal = makenormal($q) ;
+   for ($j=0; $j<@moveplanesets; $j++) {
+      if (sameplane($qnormal, makenormal($moveplanesets[$j][0]))) {
+         push @{$moveplanesets[$j]}, $q ;
+         $seen++ ;
+         last ;
+      }
+   }
+   if ($seen == 0) {
+      push @moveplanesets, [$q] ;
+   }
+}
+my @sizes = map { scalar @{$_} } @moveplanesets ;
+print "// move plane sets: [@sizes]\n" ;
 showf(@faces) ;
