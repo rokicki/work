@@ -364,24 +364,41 @@ sub cutfaces {
    return @nfaces ;
 }
 #
-#   Print the result.
+#   Expand the faces by the rotation matrix.
 #
-sub showf {
+sub expandfaces {
    my $planerot = shift ;
    my $faces = shift ;
    my @planerot = @{$planerot} ;
    my @faces = @{$faces} ;
-   print "f([\n" ;
+   my @nfaces = () ;
    for (my $i=0; $i<@planerot; $i++) {
       for (my $k=0; $k<@faces; $k++) {
-         print " [" ;
          my @face = @{$faces[$k]} ;
+         my @nface = () ;
          for (my $j=0; $j<@face; $j++) {
             my $q = rotateplane($planerot[$i], $face[$j]) ; # really point
-            print "[$q->[1],$q->[2],$q->[3]]," ;
+            push @nface, $q ;
          }
-         print "],\n" ;
+         push @nfaces, [@nface] ;
       }
+   }
+   return @nfaces ;
+}
+#
+#   Print all the faces.
+#
+sub showf {
+   my @faces = @_ ;
+   print "f([\n" ;
+   for (my $k=0; $k<@faces; $k++) {
+      print " [" ;
+      my @face = @{$faces[$k]} ;
+      for (my $j=0; $j<@face; $j++) {
+         my $q = $face[$j] ;
+         print "[$q->[1],$q->[2],$q->[3]]," ;
+      }
+      print "],\n" ;
    }
    print "]);\n" ;
 }
@@ -406,9 +423,9 @@ my @baseface = getface(@baseplanes) ;
 $facenormal = makenormal($baseplanes[0]) ;
 $edgenormal = makenormal(sum($baseface[0], $baseface[1])) ;
 $vertexnormal = makenormal($baseface[0]) ;
-print "//Facenormal @{$facenormal}\n" ;
-print "//Edgenormal @{$edgenormal}\n" ;
-print "//Vertexnormal @{$vertexnormal}\n" ;
+print "// Facenormal @{$facenormal}\n" ;
+print "// Edgenormal @{$edgenormal}\n" ;
+print "// Vertexnormal @{$vertexnormal}\n" ;
 #
 #   Pull in the actual boundaries.
 #
@@ -440,5 +457,7 @@ for my $cutplane (@cutplanes) {
       @faces = cutfaces($q, @faces) ;
    }
 }
-print "// Total faces now is ", scalar @faces, "\n" ;
-showf(\@planerot, \@faces) ;
+print "// Faces now is ", scalar @faces, "\n" ;
+@faces = expandfaces(\@planerot, \@faces) ;
+print "// Final total faces now is ", scalar @faces, "\n" ;
+showf(@faces) ;
