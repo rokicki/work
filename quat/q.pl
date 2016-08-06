@@ -365,6 +365,19 @@ sub cutfaces {
    return @nfaces ;
 }
 #
+#   Which side of a plane is a face on?  Assume it is not cut by the plane.
+#
+sub faceside {
+   my $plane = shift ;
+   my @face = @_ ;
+   my $d = $plane->[0] ;
+   for (@face) {
+      my $s = side(dot($_, $plane) - $d) ;
+      return $s if $s ;
+   }
+   die "Could not place the face on a side of the plane" ;
+}
+#
 #   Expand the faces by the rotation matrix.
 #
 sub expandfaces {
@@ -397,6 +410,75 @@ sub sameplane {
    return 1 if d($a, $b) < $eps ;
    return 1 if d($a, smul($b, -1)) < $eps ;
    return 0 ;
+}
+#
+#   Find a center of mass for a cubie, which we use as a key.
+#
+sub centermass {
+   my $cubie = shift ;
+   my $s = [0, 0, 0, 0] ;
+   my $n = 0 ;
+   for my $face (@{$cubie}) {
+      for my $pt (@{$face}) {
+         $s = sum($pt, $s) ;
+         $n++ ;
+      }
+   }
+   return smul($s, 1/$n) ;
+}
+#
+#   A list of the cubie's centers of mass.
+#
+my @cmass ;
+#
+#   We can find a cubie from the center of mass by the point sets.
+#
+my @moveplanesets = () ;
+#
+#   Find a cubie by checking its plane.
+#
+sub keyface {
+   my $face = shift ;
+   my @s = "" ;
+   for my $mplaneset (@moveplanesets) {
+      for my $mplane (@{$mplaneset}) {
+         push @s, faceside($mplane, @{$face}) ;
+      }
+   }
+   return "@s" ;
+}
+#
+#   Where we look up cubie indicies.
+#
+my %cubiekey ;
+#
+#   Find a cubie, from the center of mass.
+#
+sub findcubie {
+   my $cubie = shift ;
+   my $cm = centermass($cubie) ;
+   my $key = keyface([$cm]) ;
+   die "Miss?" if !defined($cubiekey{$key}) ;
+   return $cubiekey{$key} ;
+}
+#
+#   Rotate things.
+#
+sub rotatepoint {
+   my $q = shift ;
+   my $p = shift ;
+   return mul(mul($q, $p), invrot($q)) ;
+}
+#
+sub rotateface {
+   my $q = shift ;
+   return map { rotatepoint($q, $_) } @_ ;
+}
+#
+sub rotatecubie {
+   my $q = shift ;
+   my $cubie = shift ;
+   return [map { [rotateface($q, @{$_})] } @{$cubie}] ;
 }
 #
 #   Print all the faces.
@@ -488,7 +570,6 @@ print "// Final total faces now is ", scalar @faces, "\n" ;
 #
 #   Split moveplanes into a list of parallel planes.
 #
-@moveplanesets = () ;
 for ($i=0; $i<@moveplanes; $i++) {
    my $seen = 0 ;
    my $q = $moveplanes[$i] ;
@@ -525,8 +606,59 @@ for ($i=0; $i<@rotations; $i++) {
 }
 @sizes = map { scalar @{$_} } @moverotations ;
 print "// move rotation sets: [@sizes]\n" ;
-for ($i=0; $i<@{$moverotations[0]}; $i++) {
-   print "$i: @{$moverotations[0][$i]}\n" ;
-}
 #
-showf(@faces) ;
+#   Now, break the faces up into cubie sets according to which side of
+#   each plane each is on.  Each should be on a single side of a
+#   cutting plane (and not entirely on any particular plane).  We build
+#   a string describing sides and collect faces.
+#
+my %cubies ;
+for my $face (@faces) {
+   my $s = keyface($face) ;
+   push @{$cubies{$s}}, $face ;
+}
+print "// Count of cubies is ", scalar keys %cubies, "\n" ;
+#
+#   Each cubie has a "center of mass" which we approximate as the
+#   sum of all the points in all the faces (counting ones twice that
+#   appear multiple times).  We use this center of mass to "identify"
+#   a cubie, and with this we will calculate the orbit of all the
+#   cubies.  For now we do not "hold anything still"; we will deal with
+#   that later.
+#
+my @cubies = () ;
+for $key (keys %cubies) {
+   $cubiekey{$key} = scalar @cubies ;
+   push @cubies, $cubies{$key} ;
+}
+@cmass = map { centermass($_) } @cubies ;
+#
+#   Now we do a breadth-first search from each unseen cubie calculating the
+#   orbits.
+#
+my @seen = () ;
+my $cubiesetnum = -1 ;
+my @cubiesetnum ;
+for (my $i=0; $i<@cubies; $i++) {
+   next if $seen[$i] ;
+   my $cubie = $cubies[$i] ;
+   $cubiesetnum++ ;
+   $cubiesetnum[$i] = $cubiesetnum ;
+   my @q = ($i) ;
+   my $qg = 0 ;
+   while ($qg < @q) {
+      $s = $q[$qg++] ;
+      $cubiesetnum[$s] = $cubiesetnum ;
+      for my $movesets (@moverotations) {
+         for my $rotation (@{$movesets}) {
+            my $tq = findcubie(rotatecubie($rotation, $cubies[$s])) ;
+            next if $seen[$tq] ;
+            push @q, $tq ;
+            $seen[$tq]++ ;
+         }
+      }
+   }
+}
+print "// Cubie sets are [@cubiesetnum]\n" ;
+#
+#showf(@faces) ;
