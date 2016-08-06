@@ -2,9 +2,12 @@
 3x3x3: cube face 1/3
 4x4x4: cube face 0 face 1/2
 5x5x5: cube face 1/5 face 3/5
+6x6x6: cube face 0 face 1/3 face 2/3
+7x7x7: cube face 1/7 face 3/7 face 5/7
 skewb: cube vertex 0
 helicopter: cube edge 1/sqrt(2)
 dino: cube vertex 1/sqrt(3)
 pyraminx: tetrahedron vertex 1/3 vertex 5/3
 megaminx: dodecahedron face 0.7
+gigaminx: dodecahedron face 0.64 face 0.82
 penultimate: dodecahedron face 0
