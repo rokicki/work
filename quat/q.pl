@@ -56,6 +56,10 @@ sub sum {
    my $b = shift ;
    return [$a->[0]+$b->[0], $a->[1]+$b->[1], $a->[2]+$b->[2], $a->[3]+$b->[3]] ;
 }
+sub quatangle {
+   my $q = shift ;
+   return 2*acos($q->[0]) ;
+}
 #
 #   We start with cube rotation generators.  I don't see how conjugation
 #   by these will retain enough information.
@@ -305,6 +309,15 @@ sub makenormal {
    return normalize([0, $q->[1], $q->[2], $q->[3]]) ;
 }
 #
+#   To normalize a plane, normalize the last three values and fix up d
+#   appropriately.  We do not normalize the sign of d.
+#
+sub normalizeplane {
+   my $q = shift ;
+   my $s = sqrt($q->[1]*$q->[1]+$q->[2]*$q->[2]+$q->[3]*$q->[3]) ;
+   return [$q->[0]/$s, $q->[1]/$s, $q->[2]/$s, $q->[3]/$s] ;
+}
+#
 #   Get a description of a plane from the command line.
 #
 sub getplanefromcommandline {
@@ -412,9 +425,22 @@ sub sameplane {
    return 0 ;
 }
 #
+#   Find a center of mass for a face, which we use as a key.
+#
+sub centermassface {
+   my $face = shift ;
+   my $s = [0, 0, 0, 0] ;
+   my $n = 0 ;
+   for my $pt (@{$face}) {
+      $s = sum($pt, $s) ;
+      $n++ ;
+   }
+   return smul($s, 1/$n) ;
+}
+#
 #   Find a center of mass for a cubie, which we use as a key.
 #
-sub centermass {
+sub centermasscubie {
    my $cubie = shift ;
    my $s = [0, 0, 0, 0] ;
    my $n = 0 ;
@@ -427,23 +453,22 @@ sub centermass {
    return smul($s, 1/$n) ;
 }
 #
-#   A list of the cubie's centers of mass.
-#
-my @cmass ;
-#
 #   We can find a cubie from the center of mass by the point sets.
 #
 my @moveplanesets = () ;
 #
-#   Find a cubie by checking its plane.
+#   Find a cubie by checking its plane.  We find how many planes in each
+#   plane set the cubie is "in".
 #
 sub keyface {
    my $face = shift ;
    my @s = "" ;
    for my $mplaneset (@moveplanesets) {
+      my $t = 0 ;
       for my $mplane (@{$mplaneset}) {
-         push @s, faceside($mplane, @{$face}) ;
+         $t++ if faceside($mplane, @{$face}) > 0 ;
       }
+      push @s, $t ;
    }
    return "@s" ;
 }
@@ -451,15 +476,27 @@ sub keyface {
 #   Where we look up cubie indicies.
 #
 my %cubiekey ;
+my %facelists ;
 #
-#   Find a cubie, from the center of mass.
+#   Find a cubie, from the key face.
 #
 sub findcubie {
    my $cubie = shift ;
-   my $cm = centermass($cubie) ;
-   my $key = keyface([$cm]) ;
+   my $key = keyface($cubie->[0]) ;
    die "Miss?" if !defined($cubiekey{$key}) ;
    return $cubiekey{$key} ;
+}
+#
+#   Find a face.
+#
+sub findface {
+   my $face = shift ;
+   my $cm = centermassface($face) ;
+   my $key = keyface($face) ;
+   for my $face2 (@{$facelists{$key}}) {
+      return $face2 if abs(d($cm, centermassface($faces[$face2]))) < $eps ;
+   }
+   die "Could not find face" ;
 }
 #
 #   Rotate things.
@@ -545,7 +582,7 @@ while (@ARGV) {
    push @cutplanes, $cutplane ;
 }
 #
-my @faces = [@face] ;
+@faces = [@face] ;
 my @moveplanes = () ;
 for my $cutplane (@cutplanes) {
    for ($i=0; $i<@rotations; $i++) {
@@ -585,6 +622,20 @@ for ($i=0; $i<@moveplanes; $i++) {
       push @moveplanesets, [$q] ;
    }
 }
+#
+#   Make all the parallel planes face the same way, and then sort by d.
+#
+for my $moveplaneset (@moveplanesets) {
+   my @a = map { normalizeplane($_) } @{$moveplaneset} ;
+   my $goodnormal = makenormal($a[0]) ;
+   for (my $i=0; $i<@a; $i++) {
+      if (d(makenormal($a[$i]), $goodnormal) > $eps) {
+         $a[$i] = [-$a[$i][0], -$a[$i][1], -$a[$i][2], -$a[$i][3]] ;
+      }
+   }
+   @a = sort { $a->[0] <=> $b->[0] } @a ;
+   $moveplaneset = [@a] ;
+}
 my @sizes = map { scalar @{$_} } @moveplanesets ;
 print "// move plane sets: [@sizes]\n" ;
 #
@@ -604,6 +655,22 @@ for ($i=0; $i<@rotations; $i++) {
       }
    }
 }
+#
+#   Sort the rotations by the angle of the rotation.  A bit tricky because
+#   while the norms should be the same, they need not be.  So we start by
+#   making the norms the same.
+#
+for my $moverotationlist (@moverotations) {
+   my @a = @{$moverotationlist} ;
+   my $goodnormal = makenormal($a[0]) ;
+   for (my $i=0; $i<@a; $i++) {
+      if (d(makenormal($a[$i]), $goodnormal) > $eps) {
+         $a[$i] = [-$a[$i][0], -$a[$i][1], -$a[$i][2], -$a[$i][3]] ;
+      }
+   }
+   my @angles = sort { $a->[0] <=> $b->[0] } map { [quatangle($_), $_] } @a ;
+   $moverotationlist = [map { $_->[1] } @angles] ;
+}
 @sizes = map { scalar @{$_} } @moverotations ;
 print "// move rotation sets: [@sizes]\n" ;
 #
@@ -613,8 +680,10 @@ print "// move rotation sets: [@sizes]\n" ;
 #   a string describing sides and collect faces.
 #
 my %cubies ;
-for my $face (@faces) {
+for (my $i=0; $i<@faces; $i++) {
+   my $face = $faces[$i] ;
    my $s = keyface($face) ;
+   push @{$facelists{$s}}, $i ;
    push @{$cubies{$s}}, $face ;
 }
 print "// Count of cubies is ", scalar keys %cubies, "\n" ;
@@ -627,11 +696,10 @@ print "// Count of cubies is ", scalar keys %cubies, "\n" ;
 #   that later.
 #
 my @cubies = () ;
-for $key (keys %cubies) {
+for my $key (keys %cubies) {
    $cubiekey{$key} = scalar @cubies ;
    push @cubies, $cubies{$key} ;
 }
-@cmass = map { centermass($_) } @cubies ;
 #
 #   Now we do a breadth-first search from each unseen cubie calculating the
 #   orbits.
@@ -660,5 +728,49 @@ for (my $i=0; $i<@cubies; $i++) {
    }
 }
 print "// Cubie sets are [@cubiesetnum]\n" ;
+#
+#   Test face twists.
+#
+my $mvcnt = 0 ;
+my @gapmoves = () ;
+for (my $k=0; $k<@moveplanesets; $k++) {
+   my @moveplaneset = @{$moveplanesets[$k]} ;
+   my @slicenum = () ;
+   my @slicecnts = () ;
+   for (my $i=0; $i<@faces; $i++) {
+      my $face = $faces[$i] ;
+      my $t = 0 ;
+      for my $moveplane (@moveplaneset) {
+         $t++ if faceside($moveplane, @{$face}) > 0 ;
+      }
+      $slicenum[$i] = $t ;
+      $slicecnts[$t]++ ;
+   }
+   print "// Slicecounts are [@slicecnts]\n" ;
+   # do moves; single slice moves.
+   for (my $sc=0; $sc<@slicecnts; $sc++) {
+      my $mv = '' ;
+      for (my $i=0; $i<@faces; $i++) {
+         next if $slicenum[$i] != $sc ;
+         my @a = ($i) ;
+         my $face = $faces[$i] ;
+         my $fi2 = $i ;
+         while (1) {
+            $slicenum[$fi2] = -1 ;
+            my $face2 = [rotateface($moverotations[$k][0], @{$face})] ;
+            $fi2 = findface($face2) ;
+            last if $slicenum[$fi2] != $sc ;
+            push @a, $fi2 ;
+            $face = $face2 ;
+         }
+         if (@a > 1) {
+            $mv .= "(" . join(',', @a) . ")" ;
+         }
+      }
+      push @gapmoves, $mv ;
+      $mvcnt++ ;
+   }
+}
+print "Size(Group(", join(",",@gapmoves), "));\n" ;
 #
 #showf(@faces) ;
