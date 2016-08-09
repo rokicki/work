@@ -1,0 +1,6 @@
+Faces are A, then B, C, D, E, F around clockwise.
+Then a-f are opposite A-F.
+
+So corners are ABC, ACD, ADE, AEF, AFB, BCe, CDf,
+DEb, EFc, FBd, bfD, cbE, dcF, edB, feC, abc, acd,
+ade, aef, afb.
