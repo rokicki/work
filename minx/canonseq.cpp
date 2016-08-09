@@ -4,8 +4,8 @@ const char *faces = "ABCDEFabcdef" ;
 const int NFACES = 12 ;
 const int NCORNERS = 20 ;
 const char *corners[NCORNERS] = {
-   "ABC", "ACD", "ADE", "AEF", "AFB", "BCe", "CDf", "DEb", "EFc", "FBd",
-   "bfD", "cbE", "dcF", "edB", "feC", "abc", "acd", "ade", "aef", "afb"
+   "ABC", "ACD", "ADE", "AEF", "AFB", "CBe", "DCf", "EDb", "FEc", "BFd",
+   "fbD", "bcE", "cdF", "deB", "efC", "acb", "adc", "aed", "afe", "abf"
 } ;
 char symtoface[128] ;
 // legal orders.

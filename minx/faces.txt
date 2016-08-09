@@ -3,4 +3,9 @@ Then a-f are opposite A-F.
 
 So corners are ABC, ACD, ADE, AEF, AFB, BCe, CDf,
 DEb, EFc, FBd, bfD, cbE, dcF, edB, feC, abc, acd,
-ade, aef, afb.
+ade, aef, afb.  Oops, these are wrong.  See program.
+
+According to
+    http://twistypuzzles.com/~sandy/forum/viewtopic.php?f=1&t=26168
+the branching factor should be 26.480303433871622 but that's not
+what I'm getting.
