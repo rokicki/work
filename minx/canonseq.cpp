@@ -28,16 +28,23 @@ int main(int argc, char *argv[]) {
    }
    for (int i=0; i<NFACES; i++)
       illegal[i][i] = 1 ;
+   for (int i=0; i<NFACES; i++) {
+      for (int j=0; j<NFACES; j++)
+         cout << " " << (int)(illegal[i][j]) ;
+      cout << endl ;
+   }
    cout << 0 << " " << 1 << " " << 1 << endl ;
    for (int i=0; i<NFACES; i++)
       canonseq[1][i] = 4.0 ;
    double total = 1 ;
+   double osum = 1 ;
    for (int mvs=1; mvs+1<MAXMOVES; mvs++) {
       double sum = 0 ;
       for (int i=0; i<NFACES; i++)
          sum += canonseq[mvs][i] ;
       total += sum ;
-      cout << mvs << " " << sum << " " << total << endl ;
+      cout << mvs << " " << sum << " " << total << " " << (sum / osum) << endl ;
+      osum = sum ;
       for (int i=0; i<NFACES; i++)
          for (int j=0; j<NFACES; j++)
             if (!illegal[i][j])
