@@ -729,10 +729,17 @@ for (my $i=0; $i<@cubies; $i++) {
 }
 print "// Cubie sets are [@cubiesetnum]\n" ;
 #
+#   The sets of bitmasks giving moves for each axis based on the number
+#   of slices in each axis.  For now only OBTM.
+#
+my @movesets = ([], [],
+   [1], [1, 4], [1, 3, 7], [1, 3, 16, 24], [1, 3, 7, 15, 31],
+   [1, 3, 7, 64, 96, 112]) ;
+#
 #   Test face twists.
 #
 my $mvcnt = 0 ;
-my @gapmoves = () ;
+my @movesbyslice = () ;
 for (my $k=0; $k<@moveplanesets; $k++) {
    my @moveplaneset = @{$moveplanesets[$k]} ;
    my @slicenum = () ;
@@ -748,8 +755,10 @@ for (my $k=0; $k<@moveplanesets; $k++) {
    }
    print "// Slicecounts are [@slicecnts]\n" ;
    # do moves; single slice moves.
+   my @axismoves = () ;
    for (my $sc=0; $sc<@slicecnts; $sc++) {
       my $mv = '' ;
+      my @slicemoves = () ;
       for (my $i=0; $i<@faces; $i++) {
          next if $slicenum[$i] != $sc ;
          my @a = ($i) ;
@@ -763,15 +772,11 @@ for (my $k=0; $k<@moveplanesets; $k++) {
             push @a, $fi2 ;
             $face = $face2 ;
          }
-         @a = map { $_ + 1 } @a ;
-         if (@a > 1) {
-            $mv .= "(" . join(',', @a) . ")" ;
-         }
+         push @slicemoves, [@a] if @a > 1 ;
       }
-      push @gapmoves, $mv ;
-      $mvcnt++ ;
+      push @axismoves, [@slicemoves] ;
    }
+   push @movesbyslice, [@axismoves] ;
 }
-print "Size(Group(", join(",",@gapmoves), "))/24;\n" ;
 #
 #showf(@faces) ;
