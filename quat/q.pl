@@ -763,6 +763,7 @@ for (my $k=0; $k<@moveplanesets; $k++) {
             push @a, $fi2 ;
             $face = $face2 ;
          }
+         @a = map { $_ + 1 } @a ;
          if (@a > 1) {
             $mv .= "(" . join(',', @a) . ")" ;
          }
@@ -771,6 +772,6 @@ for (my $k=0; $k<@moveplanesets; $k++) {
       $mvcnt++ ;
    }
 }
-print "Size(Group(", join(",",@gapmoves), "));\n" ;
+print "Size(Group(", join(",",@gapmoves), "))/24;\n" ;
 #
 #showf(@faces) ;

@@ -7,9 +7,8 @@ Simulation
    Add solve detection
 
 Computation
-   Identify moves
-   Identify moving "pieces" (collections of faces)
-   Calculate orbits
+   Figure out how to deal with puzzle rotations
+   Figure out how to deal with identical pieces
    Approximate size of puzzle state
    Refine size of puzzle state
    Generate permutation representation
