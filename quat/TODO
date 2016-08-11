@@ -9,8 +9,10 @@ Simulation
 Computation
    Figure out how to deal with puzzle rotations
    Figure out how to deal with identical pieces
+   Identify corners (3), centers (1), edges(2)
+   Give face/move names
+   Generate ksolve output
    Approximate size of puzzle state
    Refine size of puzzle state
-   Generate permutation representation
    Metrics:  OBTM, SSTM, STM
    Explore distance counts
