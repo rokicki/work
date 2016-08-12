@@ -487,6 +487,14 @@ sub findcubie {
    return $cubiekey{$key} ;
 }
 #
+#   Same face (by center of mass)
+#
+sub sameface {
+   my $f1 = shift ;
+   my $f2 = shift ;
+   return abs(d(centermassface($f1), centermassface($f2))) < $eps ;
+}
+#
 #   Find a face.
 #
 sub findface {
@@ -494,7 +502,9 @@ sub findface {
    my $cm = centermassface($face) ;
    my $key = keyface($face) ;
    for my $face2 (@{$facelists{$key}}) {
-      return $face2 if abs(d($cm, centermassface($faces[$face2]))) < $eps ;
+      if (abs(d($cm, centermassface($faces[$face2]))) < $eps) {
+         return $face2 ;
+      }
    }
    die "Could not find face" ;
 }
@@ -696,9 +706,25 @@ print "// Count of cubies is ", scalar keys %cubies, "\n" ;
 #   that later.
 #
 my @cubies = () ;
+my @cubiekeys = () ;
 for my $key (keys %cubies) {
    $cubiekey{$key} = scalar @cubies ;
    push @cubies, $cubies{$key} ;
+   push @cubiekeys, $key ;
+}
+#
+#   Build an array that takes each face to a cubie ordinal and a face
+#   number.
+#
+my @facetocubies ;
+for (my $i=0; $i<@faces; $i++) {
+   my $key = keyface($faces[$i]) ;
+   for (my $j=0; $j<@{$facelists{$key}}; $j++) {
+      if ($i == $facelists{$key}[$j]) {
+         push @facetocubies, [$cubiekey{$key}, $j] ;
+         last ;
+      }
+   }
 }
 #
 #   Now we do a breadth-first search from each unseen cubie calculating the
@@ -740,6 +766,7 @@ my @movesets = ([], [],
 #
 my $mvcnt = 0 ;
 my @movesbyslice = () ;
+my @cmovesbyslice = () ;
 for (my $k=0; $k<@moveplanesets; $k++) {
    my @moveplaneset = @{$moveplanesets[$k]} ;
    my @slicenum = () ;
@@ -756,12 +783,18 @@ for (my $k=0; $k<@moveplanesets; $k++) {
    print "// Slicecounts are [@slicecnts]\n" ;
    # do moves; single slice moves.
    my @axismoves = () ;
+   my @axiscmoves = () ;
    for (my $sc=0; $sc<@slicecnts; $sc++) {
       my $mv = '' ;
       my @slicemoves = () ;
+      my @slicecmoves = () ;
+      my @cubiedone = () ;
       for (my $i=0; $i<@faces; $i++) {
          next if $slicenum[$i] != $sc ;
          my @a = ($i) ;
+         my $cubie = $facetocubies[$i][0] ;
+         my $ori = $facetocubies[$i][1] ;
+         my @b = @{$facetocubies[$i]} ;
          my $face = $faces[$i] ;
          my $fi2 = $i ;
          while (1) {
@@ -770,13 +803,24 @@ for (my $k=0; $k<@moveplanesets; $k++) {
             $fi2 = findface($face2) ;
             last if $slicenum[$fi2] != $sc ;
             push @a, $fi2 ;
+            push @b, @{$facetocubies[$fi2]} ;
             $face = $face2 ;
          }
          push @slicemoves, [@a] if @a > 1 ;
+         push @slicecmoves, [@b] if @b > 2 && !$cubiedone[$b[0]] ;
+         for (my $j=0; $j<@b; $j += 2) {
+            $cubiedone[$b[$j]]++ 
+         }
       }
       push @axismoves, [@slicemoves] ;
+      push @axiscmoves, [@slicecmoves] ;
+      print "Move:\n" ;
+      for (@slicecmoves) {
+         print " [@{$_}]\n" ;
+      }
    }
    push @movesbyslice, [@axismoves] ;
+   push @cmovesbyslice, [@axiscmoves] ;
 }
 #
 #showf(@faces) ;
