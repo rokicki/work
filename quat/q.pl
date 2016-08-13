@@ -545,10 +545,14 @@ sub showf {
    print "]);\n" ;
 }
 #
+#   Comment character.
+#
+my $comment = '#' ;
+#
 #   First, generate the rotation group.
 #
 my @rotations = generate(@g) ;
-print "// Total is ", scalar @rotations, "\n" ;
+print "$comment Total is ", scalar @rotations, "\n" ;
 #
 #   For this rotation group, let's figure out the base set of planes,
 #   starting with a plane whose normal is the first generator, and
@@ -565,9 +569,9 @@ my @baseface = getface(@baseplanes) ;
 $facenormal = makenormal($baseplanes[0]) ;
 $edgenormal = makenormal(sum($baseface[0], $baseface[1])) ;
 $vertexnormal = makenormal($baseface[0]) ;
-print "// Facenormal @{$facenormal}\n" ;
-print "// Edgenormal @{$edgenormal}\n" ;
-print "// Vertexnormal @{$vertexnormal}\n" ;
+print "$comment Facenormal @{$facenormal}\n" ;
+print "$comment Edgenormal @{$edgenormal}\n" ;
+print "$comment Vertexnormal @{$vertexnormal}\n" ;
 #
 #   Pull in the actual boundaries.
 #
@@ -580,7 +584,7 @@ if ($ARGV[0] eq 'boundary') {
 my @planerot = genuniqueplanes($boundary, \@rotations) ;
 my @planes = map { rotateplane($_, $boundary) } @planerot ;
 $nplanes = @planes ;
-print "// Total planes is $nplanes\n" ;
+print "$comment Total planes is $nplanes\n" ;
 my @face = getface(@planes) ;
 #
 #   Now do the cuts.  We split the face into multiple faces based on the
@@ -610,10 +614,10 @@ for my $cutplane (@cutplanes) {
       }
    }
 }
-print "// Faces now is ", scalar @faces, "\n" ;
-print "// Unique move planes is ", scalar @moveplanes, "\n" ;
+print "$comment Faces now is ", scalar @faces, "\n" ;
+print "$comment Unique move planes is ", scalar @moveplanes, "\n" ;
 @faces = expandfaces(\@planerot, \@faces) ;
-print "// Final total faces now is ", scalar @faces, "\n" ;
+print "$comment Final total faces now is ", scalar @faces, "\n" ;
 #
 #   Split moveplanes into a list of parallel planes.
 #
@@ -647,7 +651,7 @@ for my $moveplaneset (@moveplanesets) {
    $moveplaneset = [@a] ;
 }
 my @sizes = map { scalar @{$_} } @moveplanesets ;
-print "// move plane sets: [@sizes]\n" ;
+print "$comment move plane sets: [@sizes]\n" ;
 #
 #   For each set of move planes, find the rotations that are relevant.
 #
@@ -682,7 +686,7 @@ for my $moverotationlist (@moverotations) {
    $moverotationlist = [map { $_->[1] } @angles] ;
 }
 @sizes = map { scalar @{$_} } @moverotations ;
-print "// move rotation sets: [@sizes]\n" ;
+print "$comment move rotation sets: [@sizes]\n" ;
 #
 #   Now, break the faces up into cubie sets according to which side of
 #   each plane each is on.  Each should be on a single side of a
@@ -696,7 +700,7 @@ for (my $i=0; $i<@faces; $i++) {
    push @{$facelists{$s}}, $i ;
    push @{$cubies{$s}}, $face ;
 }
-print "// Count of cubies is ", scalar keys %cubies, "\n" ;
+print "$comment Count of cubies is ", scalar keys %cubies, "\n" ;
 #
 #   Each cubie has a "center of mass" which we approximate as the
 #   sum of all the points in all the faces (counting ones twice that
@@ -730,19 +734,32 @@ for (my $i=0; $i<@faces; $i++) {
 #   Now we do a breadth-first search from each unseen cubie calculating the
 #   orbits.
 #
+my @typename = qw(? CENTER EDGE CORNER ? ? ? ? ? ? ? ? ? ?) ;
+my @cubiesetname = () ;
+my @cubietypecounts = () ;
+my @orbitoris = () ;
 my @seen = () ;
 my $cubiesetnum = -1 ;
 my @cubiesetnum ;
+my @cubieordnum ;
+my @cubieord = () ;
 for (my $i=0; $i<@cubies; $i++) {
    next if $seen[$i] ;
    my $cubie = $cubies[$i] ;
    $cubiesetnum++ ;
    $cubiesetnum[$i] = $cubiesetnum ;
+   my $facecnt = scalar @{$cubie} ;
+   my $typectr = 0+$cubietypecounts[$facecnt]++ ;
+   my $typename = $typename[$facecnt] . ($typectr == 0 ? '' : ($typectr+1)) ;
+   $cubiesetname[$cubiesetnum] = $typename ;
+   $orbitoris[$cubiesetnum] = $facecnt ;
    my @q = ($i) ;
    my $qg = 0 ;
+   $seen[$i]++ ;
    while ($qg < @q) {
       $s = $q[$qg++] ;
       $cubiesetnum[$s] = $cubiesetnum ;
+      $cubieordnum[$s] = 0+$cubieord[$cubiesetnum]++ ;
       for my $movesets (@moverotations) {
          for my $rotation (@{$movesets}) {
             my $tq = findcubie(rotatecubie($rotation, $cubies[$s])) ;
@@ -753,7 +770,7 @@ for (my $i=0; $i<@cubies; $i++) {
       }
    }
 }
-print "// Cubie sets are [@cubiesetnum]\n" ;
+print "$comment Cubie sets are [@cubiesetnum]\n" ;
 #
 #   The sets of bitmasks giving moves for each axis based on the number
 #   of slices in each axis.  For now only OBTM.
@@ -780,7 +797,7 @@ for (my $k=0; $k<@moveplanesets; $k++) {
       $slicenum[$i] = $t ;
       $slicecnts[$t]++ ;
    }
-   print "// Slicecounts are [@slicecnts]\n" ;
+   print "$comment Slicecounts are [@slicecnts]\n" ;
    # do moves; single slice moves.
    my @axismoves = () ;
    my @axiscmoves = () ;
@@ -814,13 +831,93 @@ for (my $k=0; $k<@moveplanesets; $k++) {
       }
       push @axismoves, [@slicemoves] ;
       push @axiscmoves, [@slicecmoves] ;
-      print "Move:\n" ;
-      for (@slicecmoves) {
-         print " [@{$_}]\n" ;
-      }
    }
    push @movesbyslice, [@axismoves] ;
    push @cmovesbyslice, [@axiscmoves] ;
 }
+#
+#   Write out a ksolve definition file.
+#
+sub writeksolve {
+   # first figure out what sets move.
+   my @setmoves ;
+   for (my $k=0; $k<@moveplanesets; $k++) {
+      my @moveplaneset = @{$moveplanesets[$k]} ;
+      my $slices = 1+scalar @moveplaneset ;
+      my @moveset = @{$movesets[$slices]} ;
+      my $allbits = 0 ;
+      for (my $i=0; $i<@moveset; $i++) {
+         $allbits |= $moveset[$i] ;
+      }
+      die "Bad moveset" if @moveset == 0 ;
+      my @axiscmoves = @{$cmovesbyslice[$k]} ;
+      for (my $i=0; $i<@axiscmoves; $i++) {
+         next if (($allbits >> $i) & 1) == 0 ;
+         my @slicecmoves = @{$axiscmoves[$i]} ;
+         for (my $j=0; $j<@slicecmoves; $j++) {
+            $setmoves[$cubiesetnum[$slicecmoves[$j][0]]]++ ;
+         }
+      }
+   }
+   for (my $i=0; $i<@cubiesetname; $i++) {
+      next if !$setmoves[$i] ;
+      print "Set $cubiesetname[$i] $cubieord[$i] $orbitoris[$i]\n" ;
+   }
+   print "\n" ;
+   print "Solved\n" ;
+   for (my $i=0; $i<@cubiesetname; $i++) {
+      next if !$setmoves[$i] ;
+      print "$cubiesetname[$i]\n" ;
+      print join " ", 1..$cubieord[$i], "\n" ;
+   }
+   print "End\n" ;
+   print "\n" ;
+   # Iterate through the axis, pick up the move sets we care about,
+   # iterate through those.  For now give arbitrary names.
+   my $movename = 'A' ;
+   for (my $k=0; $k<@moveplanesets; $k++) {
+      my @moveplaneset = @{$moveplanesets[$k]} ;
+      my $slices = 1+scalar @moveplaneset ;
+      my @moveset = @{$movesets[$slices]} ;
+      for (my $i=0; $i<@moveset; $i++) {
+         my $movebits = $moveset[$i] ;
+         print "Move $movename\n" ;
+         my @perm = () ;
+         my @ori = () ;
+         for (my $i=0; $i<@cubiesetname; $i++) {
+            push @perm, [0..$cubieord[$i]-1] ;
+            push @ori, [(0) x $cubieord[$i]] ;
+         }
+         $movename++ ;
+         my @axiscmoves = @{$cmovesbyslice[$k]} ;
+         for (my $i=0; $i<@axiscmoves; $i++) {
+            next if (($movebits >> $i) & 1) == 0 ;
+            my @slicecmoves = @{$axiscmoves[$i]} ;
+            for (my $j=0; $j<@slicecmoves; $j++) {
+               my @mperm = @{$slicecmoves[$j]} ;
+               my $setnum = $cubiesetnum[$mperm[0]] ;
+               for (my $ii=0; $ii<@mperm; $ii += 2) {
+                  $mperm[$ii] = $cubieordnum[$mperm[$ii]] ;
+               }
+               for (my $ii=0; $ii<@mperm; $ii += 2) {
+                  $perm[$setnum][$mperm[$ii]] = $mperm[($ii+2)%@mperm] ;
+                  $ori[$setnum][$mperm[($ii+2)%@mperm]] = $mperm[$ii+1] ;
+               }
+            }
+         }
+         for (my $i=0; $i<@cubiesetname; $i++) {
+            next if !$setmoves[$i] ;
+            print "$cubiesetname[$i]\n" ;
+            print join(" ", map { 1+$_ } @{$perm[$i]}), "\n" ;
+            if ($orbitoris[$i] > 1) {
+               print join(" ", @{$ori[$i]}), "\n" ;
+            }
+         }
+         print "End\n" ;
+         print "\n" ;
+      }
+   }
+}
+writeksolve() ;
 #
 #showf(@faces) ;
