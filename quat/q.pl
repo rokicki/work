@@ -717,6 +717,79 @@ for my $key (keys %cubies) {
    push @cubiekeys, $key ;
 }
 #
+#   Sort the cubies around each *corner* so they are clockwise.  Only
+#   relevant for cubies that have more than two faces.  Note that there
+#   may be many points; vertex corners on an icosahedron have five
+#   faces, and of course in general for convex shapes there is no bound
+#   on the maximum number of faces in a corner.
+#
+for (my $i=0; $i<@cubies; $i++) {
+   my @cubie = @{$cubies[$i]} ;
+   next if @cubie < 3 ;
+   my $s = keyface($cubie[0]) ;
+   my @facelist = @{$facelists{$s}} ;
+   my @cm = map { centermassface($_) } @cubie ;
+   my $cm = centermassface([@cm]) ;
+   while (1) {
+      my $changed = 0 ;
+      for (my $i=0; $i<@cubie; $i++) {
+         my $j = ($i + 1) % @cubie ;
+         my $v = dot($cm, cross($cm[$i], $cm[$j])) ;
+         if (dot($cm, cross($cm[$i], $cm[$j])) < 0) {
+            my $t = $cubie[$i] ;
+            $cubie[$i] = $cubie[$j] ;
+            $cubie[$j] = $t ;
+            $t = $cm[$i] ;
+            $cm[$i] = $cm[$j] ;
+            $cm[$j] = $t ;
+            $t = $facelist[$i] ;
+            $facelist[$i] = $facelist[$j] ;
+            $facelist[$j] = $t ;
+            $changed = 1 ;
+         }
+      }
+      last if !$changed ;
+   }
+   #
+   #   Now reorder by picking the one with the largest y coordinate to
+   #   start, always.
+   #
+#  my $hi = 0 ;
+#  for (my $i=1; $i<@cm; $i++) {
+#     if (abs($cm[$i][2]) > abs($cm[$hi][2])) {
+#        $hi = $i ;
+#     }
+#  }
+#  my @ocm = @cm ;
+#  my @ocubie = @cubie ;
+#  my @ofacelist = @facelist ;
+#  for (my $i=0; $i<@cm; $i++) {
+#     $cm[$i] = $ocm[($i+$hi)%@cm] ;
+#     $cubie[$i] = $ocubie[($i+$hi)%@cm] ;
+#     $facelist[$i] = $ofacelist[($i+$hi)%@cm] ;
+#  }
+#  print "Sorted this corner into:\n" ;
+#  for (@cm) {
+#     print "   [" ;
+#     print join(" ", @{$_}) ;
+#     print "]\n" ;
+#  }
+   $cubies[$i] = [@cubie] ;
+   $facelists{$s} = [@facelist] ;
+}
+#
+for my $moverotationlist (@moverotations) {
+   my @a = @{$moverotationlist} ;
+   my $goodnormal = makenormal($a[0]) ;
+   for (my $i=0; $i<@a; $i++) {
+      if (d(makenormal($a[$i]), $goodnormal) > $eps) {
+         $a[$i] = [-$a[$i][0], -$a[$i][1], -$a[$i][2], -$a[$i][3]] ;
+      }
+   }
+   my @angles = sort { $a->[0] <=> $b->[0] } map { [quatangle($_), $_] } @a ;
+   $moverotationlist = [map { $_->[1] } @angles] ;
+}
+#
 #   Build an array that takes each face to a cubie ordinal and a face
 #   number.
 #
@@ -734,7 +807,7 @@ for (my $i=0; $i<@faces; $i++) {
 #   Now we do a breadth-first search from each unseen cubie calculating the
 #   orbits.
 #
-my @typename = qw(? CENTER EDGE CORNER ? ? ? ? ? ? ? ? ? ?) ;
+my @typename = qw(? CENTER EDGE CORNER CORNER CORNER CORNER CORNER ? ? ? ? ?) ;
 my @cubiesetname = () ;
 my @cubietypecounts = () ;
 my @orbitoris = () ;
@@ -825,9 +898,9 @@ for (my $k=0; $k<@moveplanesets; $k++) {
          }
          push @slicemoves, [@a] if @a > 1 ;
          push @slicecmoves, [@b] if @b > 2 && !$cubiedone[$b[0]] ;
-#        for (my $j=0; $j<@b; $j += 2) {
-#           $cubiedone[$b[$j]]++ 
-#        }
+         for (my $j=0; $j<@b; $j += 2) {
+            $cubiedone[$b[$j]]++ 
+         }
       }
       push @axismoves, [@slicemoves] ;
       push @axiscmoves, [@slicecmoves] ;
