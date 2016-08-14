@@ -825,9 +825,9 @@ for (my $k=0; $k<@moveplanesets; $k++) {
          }
          push @slicemoves, [@a] if @a > 1 ;
          push @slicecmoves, [@b] if @b > 2 && !$cubiedone[$b[0]] ;
-         for (my $j=0; $j<@b; $j += 2) {
-            $cubiedone[$b[$j]]++ 
-         }
+#        for (my $j=0; $j<@b; $j += 2) {
+#           $cubiedone[$b[$j]]++ 
+#        }
       }
       push @axismoves, [@slicemoves] ;
       push @axiscmoves, [@slicecmoves] ;
@@ -899,9 +899,13 @@ sub writeksolve {
                for (my $ii=0; $ii<@mperm; $ii += 2) {
                   $mperm[$ii] = $cubieordnum[$mperm[$ii]] ;
                }
+# print ">>> [@mperm]\n" ;
                for (my $ii=0; $ii<@mperm; $ii += 2) {
                   $perm[$setnum][$mperm[$ii]] = $mperm[($ii+2)%@mperm] ;
-                  $ori[$setnum][$mperm[($ii+2)%@mperm]] = $mperm[$ii+1] ;
+# print " $mperm[($ii+3)%@mperm] from $mperm[($ii+1)%@mperm]\n" ;
+                  $ori[$setnum][$mperm[$ii]] =
+      ($mperm[($ii+@mperm-1)%@mperm] - $mperm[($ii+1)%@mperm] + $orbitoris[$setnum]) %
+                                                      $orbitoris[$setnum] ;
                }
             }
          }
