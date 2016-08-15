@@ -807,7 +807,7 @@ for (my $i=0; $i<@faces; $i++) {
 #   Now we do a breadth-first search from each unseen cubie calculating the
 #   orbits.
 #
-my @typename = qw(? CENTER EDGE CORNER CORNER CORNER CORNER CORNER ? ? ? ? ?) ;
+my @typename = qw(? CENTER EDGE CORNER C4RNER C5RNER C6RNER C7RNER ? ? ? ? ?) ;
 my @cubiesetname = () ;
 my @cubietypecounts = () ;
 my @orbitoris = () ;
