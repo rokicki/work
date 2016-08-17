@@ -9,10 +9,19 @@ Simulation
 Computation
    Figure out how to deal with puzzle rotations
    Figure out how to deal with identical pieces
-   Identify corners (3), centers (1), edges(2)
+   Figure out how to deal with multi-solution puzzles (dino)
    Give face/move names
-   Generate ksolve output
    Approximate size of puzzle state
    Refine size of puzzle state
    Metrics:  OBTM, SSTM, STM
    Explore distance counts
+
+Status:
+
+3x3x3 ksolve works
+2x2x2 ksolve works
+skewb, dino work for the most part but can't support all the different
+   solving orientations yet (too many states)
+megaminx fails when ksolve tries to compute orientation table; too many
+   orientations
+helicoper doesn't understand identical positions
