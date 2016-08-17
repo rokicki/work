@@ -321,6 +321,7 @@ sub normalizeplane {
 #   Get a description of a plane from the command line.
 #
 sub getplanefromcommandline {
+   return undef if @ARGV < 2 ;
    my $a = shift @ARGV ;
    my $b ;
    my $c ;
@@ -331,6 +332,10 @@ sub getplanefromcommandline {
    } elsif ($a eq 'edge') {
       ($a, $b, $c) = @{$edgenormal}[1,2,3] ;
    } else {
+      if (@ARGV < 3) {
+         unshift @ARGV, $a ;
+         return undef ;
+      }
       $b = shift @ARGV ;
       $c = shift @ARGV ;
    }
@@ -547,7 +552,11 @@ sub showf {
 #
 #   Comment character.
 #
-my $comment = '#' ;
+my $comment = '//' ;
+for (@ARGV) {
+   $comment = '#' if $_ eq 'ksolve' || $_ eq 'gap' ;
+}
+print "$comment @ARGV\n" ;
 #
 #   First, generate the rotation group.
 #
@@ -593,6 +602,7 @@ my @face = getface(@planes) ;
 my @cutplanes = () ;
 while (@ARGV) {
    my $cutplane = getplanefromcommandline() ;
+   last if !defined($cutplane) ;
    push @cutplanes, $cutplane ;
 }
 #
@@ -995,6 +1005,53 @@ sub writeksolve {
       }
    }
 }
-writeksolve() ;
 #
-#showf(@faces) ;
+#   Write out gap permutations.
+#
+sub writegap {
+   my @perms = () ;
+   my $movename = "MA" ;
+   for (my $k=0; $k<@moveplanesets; $k++) {
+      my @moveplaneset = @{$moveplanesets[$k]} ;
+      my $slices = 1+scalar @moveplaneset ;
+      my @moveset = @{$movesets[$slices]} ;
+      for (my $i=0; $i<@moveset; $i++) {
+         $order = undef ;
+         my $move = "" ;
+         my $movebits = $moveset[$i] ;
+         my @axismoves = @{$movesbyslice[$k]} ;
+         for (my $i=0; $i<@axismoves; $i++) {
+            next if (($movebits >> $i) & 1) == 0 ;
+            my @slicemoves = @{$axismoves[$i]} ;
+            for (my $j=0; $j<@slicemoves; $j++) {
+               # gap perms start with 1
+               my @mperm = map { 1+$_ } @{$slicemoves[$j]} ;
+               $order = scalar @mperm ;
+               $move .= "(" . (join ",", @mperm) . ")" ;
+            }
+         }
+         print "$movename:=$move;\n" ;
+         push @perms, $movename ;
+         for (my $j=2; $j<$order; $j++) {
+            push @perms, "$movename^$j" ;
+         }
+         $movename++ ;
+      }
+   }
+   print "Gen:=[" ;
+   print join ",", @perms ;
+   print "];\n" ;
+}
+#
+while (@ARGV) {
+   my $a = shift @ARGV ;
+   if ($a eq 'ksolve') {
+      writeksolve() ;
+   } elsif ($a eq 'gap') {
+      writegap() ;
+   } elsif ($a eq 'threejs') {
+      showf(@faces) ;
+   } else {
+      die "What would you like me to do?" ;
+   }
+}
