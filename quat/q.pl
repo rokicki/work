@@ -584,7 +584,6 @@ print "$comment Vertexnormal @{$vertexnormal}\n" ;
 #
 #   Pull in the actual boundaries.
 #
-#
 my $boundary = [@{$facenormal}] ;
 $boundary->[0] = 1 ;
 if ($ARGV[0] eq 'boundary') {
@@ -713,7 +712,7 @@ for (my $i=0; $i<@faces; $i++) {
 print "$comment Count of cubies is ", scalar keys %cubies, "\n" ;
 #
 #   Each cubie has a "center of mass" which we approximate as the
-#   sum of all the points in all the faces (counting ones twice that
+#   sum of all the points in all the faces (counting ones multiply that
 #   appear multiple times).  We use this center of mass to "identify"
 #   a cubie, and with this we will calculate the orbit of all the
 #   cubies.  For now we do not "hold anything still"; we will deal with
@@ -760,30 +759,6 @@ for (my $i=0; $i<@cubies; $i++) {
       }
       last if !$changed ;
    }
-   #
-   #   Now reorder by picking the one with the largest y coordinate to
-   #   start, always.
-   #
-#  my $hi = 0 ;
-#  for (my $i=1; $i<@cm; $i++) {
-#     if (abs($cm[$i][2]) > abs($cm[$hi][2])) {
-#        $hi = $i ;
-#     }
-#  }
-#  my @ocm = @cm ;
-#  my @ocubie = @cubie ;
-#  my @ofacelist = @facelist ;
-#  for (my $i=0; $i<@cm; $i++) {
-#     $cm[$i] = $ocm[($i+$hi)%@cm] ;
-#     $cubie[$i] = $ocubie[($i+$hi)%@cm] ;
-#     $facelist[$i] = $ofacelist[($i+$hi)%@cm] ;
-#  }
-#  print "Sorted this corner into:\n" ;
-#  for (@cm) {
-#     print "   [" ;
-#     print join(" ", @{$_}) ;
-#     print "]\n" ;
-#  }
    $cubies[$i] = [@cubie] ;
    $facelists{$s} = [@facelist] ;
 }
@@ -855,13 +830,6 @@ for (my $i=0; $i<@cubies; $i++) {
 }
 print "$comment Cubie sets are [@cubiesetnum]\n" ;
 #
-#   The sets of bitmasks giving moves for each axis based on the number
-#   of slices in each axis.  For now only OBTM.
-#
-my @movesets = ([], [],
-   [1], [1, 4], [1, 3, 7], [1, 3, 16, 24], [1, 3, 7, 15, 31],
-   [1, 3, 7, 64, 96, 112]) ;
-#
 #   Test face twists.
 #
 my $mvcnt = 0 ;
@@ -918,6 +886,13 @@ for (my $k=0; $k<@moveplanesets; $k++) {
    push @movesbyslice, [@axismoves] ;
    push @cmovesbyslice, [@axiscmoves] ;
 }
+#
+#   The sets of bitmasks giving moves for each axis based on the number
+#   of slices in each axis.  For now only OBTM.
+#
+my @movesets = ([], [],
+   [1], [1, 4], [1, 3, 7], [1, 3, 16, 24], [1, 3, 7, 15, 31],
+   [1, 3, 7, 64, 96, 112]) ;
 #
 #   Write out a ksolve definition file.
 #
