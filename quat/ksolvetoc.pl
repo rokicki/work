@@ -120,8 +120,12 @@ for (@sets) {
 print <<EOF ;
        }) ;
 }
+int inc(int a, int b, int m) {
+   return a - a % m + (a + b) % m ;
+}
 void slowmove(const puz &src, puz &dst, int m, int n) {
    puz t = src ;
+   dst = src ;
    while (n-- > 0) {
       switch (m) {
 EOF
@@ -145,9 +149,31 @@ for $move (@moves) {
    }
    print "         break ;\n" ;
 }
+$nmoves = @moves ;
 print <<EOF ;
       }
       t = dst ;
+   }
+}
+int NMOVES = $nmoves ;
+#include <iostream>
+int main() {
+   puz a, b ;
+   init(a) ;
+   int maxn = -1 ;
+   for (int m=0; m<NMOVES; m++) {
+      for (int n=1; ; n++) {
+         slowmove(a, b, m, n) ;
+         if (a == b) {
+            if (maxn < 0)
+               maxn = n ;
+            else if (maxn != n) {
+               std::cout << "Bad cycles; " << n << " vs " << maxn << std::endl ;
+               exit(10) ;
+            }
+            break ;
+         }
+      }
    }
 }
 EOF
