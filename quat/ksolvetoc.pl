@@ -138,12 +138,13 @@ for $move (@moves) {
       my @n = @{$moves{$move}{$set}[0]} ;
       my @o = @{$moves{$move}{$set}[1]} ;
       for ($i=0; $i<$n{$set}; $i++) {
-         next if $o[$i] == 0 && $n[$i] == $i+1 ;
+         my $o = $o[$n[$i]-1] ;
+         next if $o == 0 && $n[$i] == $i+1 ;
          my $ni = $n[$i]-1 ;
-         if ($o[$i] == 0) {
+         if ($o == 0) {
             print "         dst.${f}[$i] = t.${f}[$ni] ;\n" ;
          } else {
-            print "         dst.${f}[$i] = inc(t.${f}[$ni],$o[$i],$o{$set}) ;\n" ;
+            print "         dst.${f}[$i] = inc(t.${f}[$ni],$o,$o{$set}) ;\n" ;
          }
       }
    }
@@ -157,6 +158,9 @@ print <<EOF ;
 }
 int NMOVES = $nmoves ;
 #include <iostream>
+#include <vector>
+#include <set>
+using namespace std ;
 int main() {
    puz a, b ;
    init(a) ;
@@ -168,12 +172,31 @@ int main() {
             if (maxn < 0)
                maxn = n ;
             else if (maxn != n) {
-               std::cout << "Bad cycles; " << n << " vs " << maxn << std::endl ;
+               cout << "Bad cycles; " << n << " vs " << maxn << endl ;
                exit(10) ;
             }
             break ;
          }
       }
+   }
+   vector<puz> q ;
+   set<puz> world ;
+   q.push_back(a) ;
+   world.insert(a) ;
+   vector<puz> nextlev ;
+   for (int d=0; ; d++) {
+      cout << d << " " << q.size() << endl << flush ;
+      for (int i=0; i<q.size(); i++)
+         for (int m=0; m<NMOVES; m++)
+            for (int n=0; n<maxn; n++) {
+               slowmove(q[i], b, m, n) ;
+               if (world.find(b) == world.end()) {
+                  nextlev.push_back(b) ;
+                  world.insert(b) ;
+               }
+            }
+      swap(q, nextlev) ;
+      nextlev.clear() ;
    }
 }
 EOF
