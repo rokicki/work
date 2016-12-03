@@ -893,6 +893,16 @@ for (my $k=0; $k<@moveplanesets; $k++) {
 my @movesets = ([], [],
    [1], [1, 4], [1, 3, 7], [1, 3, 16, 24], [1, 3, 7, 15, 31],
    [1, 3, 7, 64, 96, 112]) ;
+my $allmoves = 0 ;
+#
+sub getmovesets {
+   my $slices = shift ;
+   if ($allmoves) {
+      return (1, 2) if $slices == 2 ;
+      die "All moves not defined if slices not equal 2" ;
+   }
+   return @{$movesets[$slices]} ;
+}
 #
 #   Write out a ksolve definition file.
 #
@@ -902,7 +912,7 @@ sub writeksolve {
    for (my $k=0; $k<@moveplanesets; $k++) {
       my @moveplaneset = @{$moveplanesets[$k]} ;
       my $slices = 1+scalar @moveplaneset ;
-      my @moveset = @{$movesets[$slices]} ;
+      my @moveset = getmovesets($slices) ;
       my $allbits = 0 ;
       for (my $i=0; $i<@moveset; $i++) {
          $allbits |= $moveset[$i] ;
@@ -936,7 +946,7 @@ sub writeksolve {
    for (my $k=0; $k<@moveplanesets; $k++) {
       my @moveplaneset = @{$moveplanesets[$k]} ;
       my $slices = 1+scalar @moveplaneset ;
-      my @moveset = @{$movesets[$slices]} ;
+      my @moveset = getmovesets($slices) ;
       for (my $i=0; $i<@moveset; $i++) {
          my $movebits = $moveset[$i] ;
          print "Move $movename\n" ;
@@ -989,7 +999,7 @@ sub writegap {
    for (my $k=0; $k<@moveplanesets; $k++) {
       my @moveplaneset = @{$moveplanesets[$k]} ;
       my $slices = 1+scalar @moveplaneset ;
-      my @moveset = @{$movesets[$slices]} ;
+      my @moveset = getmovesets($slices) ;
       for (my $i=0; $i<@moveset; $i++) {
          $order = undef ;
          my $move = "" ;
@@ -1026,6 +1036,8 @@ while (@ARGV) {
       writegap() ;
    } elsif ($a eq 'threejs') {
       showf(@faces) ;
+   } elsif ($a eq 'allmoves') {
+      $allmoves++ ;
    } else {
       die "What would you like me to do?" ;
    }
