@@ -188,7 +188,7 @@ int main() {
       cout << d << " " << q.size() << endl << flush ;
       for (int i=0; i<q.size(); i++)
          for (int m=0; m<NMOVES; m++)
-            for (int n=0; n<maxn; n++) {
+            for (int n=1; n<maxn; n++) {
                slowmove(q[i], b, m, n) ;
                if (world.find(b) == world.end()) {
                   nextlev.push_back(b) ;
