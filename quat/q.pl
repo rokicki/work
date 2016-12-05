@@ -595,6 +595,12 @@ $nplanes = @planes ;
 print "$comment Total planes is $nplanes\n" ;
 my @face = getface(@planes) ;
 #
+#   Let's show the face here.
+#
+for ($i=0; $i<@face; $i++) {
+   print "# PT $face[$i][0] $face[$i][1] $face[$i][2] $face[$i][3]\n" ;
+}
+#
 #   Now do the cuts.  We split the face into multiple faces based on the
 #   rotations of the cuts.
 #
