@@ -169,6 +169,19 @@ void dfs(const puz &a, int lastm, int togo) {
             dfs(b, m, togo-1) ;
          }
 }
+#include <sys/time.h>
+static double start ;
+double walltime() {
+   struct timeval tv ;
+   gettimeofday(&tv, 0) ;
+   return tv.tv_sec + 0.000001 * tv.tv_usec ;
+}
+double duration() {
+   double now = walltime() ;
+   double r = now - start ;
+   start = now ;
+   return r ;
+}
 int main() {
    puz a, b ;
    init(a) ;
@@ -187,9 +200,10 @@ int main() {
       }
    }
    solved = a ;
+   duration() ;
    for (int d=0; ; d++) {
       globald = d ;
-      cout << "Searching " << d << endl << flush ;
       dfs(a, -1, d) ;
+      cout << "Searched " << d << " in " << duration() << endl << flush ;
    }
 }
