@@ -244,16 +244,25 @@ void dfs(const puz &a, int lastm, int togo) {
       for (int i=0; i<12; i++)
          if (a.center[i] == solved.center[i])
             centr++ ;
+      if (centr < 3)
+         return ;
       for (int i=0; i<20; i++)
          if (a.corner[i] == solved.corner[i])
             cornr++ ;
-      if (togo == 0 && cornr >= 17 && centr >= 9) {
+      if (cornr < 6)
+         return ;
+      if (togo == 0 && cornr >= 16 && centr >= 8) {
          cout << " " << cornr << " " << centr << ":" ;
          for (int i=globald; i>0; i--)
             cout << " " << (char)('A'+stack[i]/10) << (stack[i]%10) ;
+         cout << " /" ;
+         for (int i=0; i<12; i++) if (a.center[i] != solved.center[i])
+            cout << " " << i << "->" << (int)a.center[i] ;
+         for (int i=0; i<20; i++) if (a.corner[i] != solved.corner[i])
+            cout << " " << i << "->" << (int)a.corner[i] ;
          cout << endl << flush ;
       }
-      if (togo == 0 || (togo == 1 && (cornr < 7 || centr < 3)))
+      if (togo == 0 || (togo == 1 && (cornr < 6 || centr < 3)))
          return ;
    }
    puz b ;
