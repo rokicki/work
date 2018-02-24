@@ -2,7 +2,7 @@
 use Math::Trig ;
 $|++ ;
 #
-#   Experiments with quaternions.
+#   Experiments with quaternions.  Touch.
 #
 #  1  1  i  j  k
 #  1  1  i  j  k
