@@ -1,8 +1,11 @@
 "use strict" ;
 
+// Next we need a quaternion class.  We use this to represent rotations,
+// planes, and points.
+
 function Quat(a_, b_, c_, d_) {
    if (this instanceof Quat) {
-      this.a = a_; this.b = b_; this.c = c_; this.d = d_ ;
+      this.a = a_ ; this.b = b_ ; this.c = c_ ; this.d = d_ ;
    } else {
       return new Quat(a_, b_, c_, d_) ;
    }
@@ -21,18 +24,9 @@ Quat.prototype = {
    function() {
       return '[' + this.a + ',' + this.b + ',' + this.c + ',' + this.d + ']' ;
    },
-   's_': // square a real
-   function(a) {
-      return a*a ;
-   },
-   's2_': // distance squared between two reals
-   function(a, b) {
-      return (a-b)*(a-b) ;
-   },
    'dist': // Euclidean distance between two quaternions
    function(q) {
-      return Math.sqrt(this.s_(this.a-q.a)+this.s_(this.b-q.b)+
-                       this.s_(this.c-q.c)+this.s_(this.d-q.d)) ;
+      return Math.hypot(this.a-q.a, this.b-q.b, this.c-q.c, this.d-q.d) ;
    },
    'cross': // Cross product of two quaternions
    function(q) {
@@ -42,6 +36,11 @@ Quat.prototype = {
    'dot': // dot product of two quaternions
    function(q) {
       return this.b*q.b+this.c*q.c+this.d*q.d ;
+   },
+   'normalize': // make the magnitude be 1
+   function() {
+      var d = Math.sqrt(this.dot(this)) ;
+      return Quat(this.a/d, this.b/d, this.c/d, this.d/d) ;
    },
    'smul': // scalar multiplication
    function(m) {
@@ -58,6 +57,52 @@ Quat.prototype = {
    'invrot': // quaternion inverse rotation
    function() {
       return Quat(this.a, -this.b, -this.c, -this.d) ;
+   },
+   'det3x3': // calculate a 3x3 determinant
+   function(a00, a01, a02, a10, a11, a12, a20, a21, a22) {
+      return a00 * (a11 * a22 - a12 * a21) +
+             a01 * (a12 * a20 - a10 * a22) +
+             a02 * (a10 * a21 - a11 * a20) ;
+   },
+   'rotateplane': // rotate a plane using a quaternion
+   function(q) {
+      var t = q.mul(Quat(0, this.b, this.c, this.d)).mul(q.invrot()) ;
+      t.a = p.a ;
+      return t ;
+   },
+   'intersect3': // find the intersection of three planes if there is one
+   function(p2, p3) {
+      var det = det3x3(this.b, this.c, this.d,
+                       p2.b, p2.c, p2.d,
+                       p3.b, p3.c, p3.d) ;
+      if (Math.abs(det) < eps) {
+         return [] ;
+      }
+      return Quat(0,
+                  this.det3x3(this.a, this.c, this.d,
+                              p2.a, p2.c, p2.d, p3.a, p3.c, p3.d)/det,
+                  this.det3x3(this.b, this.a, this.d,
+                              p2.b, p2.a, p2.d, p3.b, p3.a, p3.d)/det,
+                  this.det3x3(this.b, this.c, this.a,
+                              p2.b, p2.c, p2.a, p3.b, p3.c, p3.a)/det) ;
+   },
+   'solvethreeplanes': // find intersection of three planes but only if interior
+   // Takes three indices into a plane array, and returns the point at the
+   // intersection of all three, but only if it is internal to all planes.
+   function(p1, p2, p3, planes) {
+      var p = planes[p1].intersect3(planes[p2], planes[p3]) ;
+      if (!p)
+         return p ;
+      for (var i=0; i<planes.length; i++) {
+         if (i != p1 && i != p2 && i != p3) {
+            var dt = planes[i].b * p.x + planes[i].c * p.y + planes[i].d * p.z ;
+            if ((planes[i].a > 0 && dt > planes[i].a) ||
+                (planes[i].a < 0 && dt < planes[i].a)) {
+               return [] ;
+            }
+         }
+      }
+      return p ;
    },
 }
 
@@ -138,4 +183,65 @@ PlatonicGenerator.prototype = {
       }
       return q ;
    },
+   'uniqueplanes': // compute unique plane rotations
+   // given a rotation group and a plane, find the rotations that
+   // generate unique planes.  This is quadratic in the return size.
+   function(p, g) {
+      var planes = [] ;
+      var planerot = [] ;
+      for (var i=0; i<g.length; i++) {
+         var p2 = p.rotateplane(g[i]) ;
+         var seen = false ;
+         for (var j=0; j<planes.length; p++) {
+            if (p2.dist(planes[j]) < eps) {
+               seen = true ;
+               break ;
+            }
+         }
+         if (!seen) {
+            planes.push(p2) ;
+            planerot.push(g[i]) ;
+         }
+      }
+      return planerot ;
+   },
+   'getface': // compute a face given a set of planes
+   // The face returned will be a set of points that lie in the first plane
+   // in the given array, that are on the surface of the polytope defined
+   // by all the planes, and will be returned in clockwise order.
+   // This is O(planes^2 * return size + return_size^2).
+   function(planes) {
+      var face = [] ;
+      for (var i=1; i<planes.length; i++) {
+         for (var j=i+1; j<planes.length; j++) {
+            var p = planes[0].solvethreeplanes(0, i, j, planes) ;
+            if (p) {
+               var seen = false ;
+               for (var k=0; k<face.length; k++) {
+                  if (p.dist(face[k]) < eps) {
+                     seen = true ;
+                     break ;
+                  }
+               }
+               if (!seen) {
+                  face.push(p) ;
+               }
+            }
+         }
+      }
+      while (true) {
+         var changed = false ;
+         for (var i=0; i<face.length; i++) {
+            var j = (i + 1) % face.length ;
+            if (planes[0].dot(face[i].cross(face[j])) < 0) {
+               var t = faces[i] ;
+               faces[i] = faces[j] ;
+               faces[j] = t ;
+               changed = true ;
+            }
+         }
+         if (!changed)
+            break ;
+      }
+   }
 } ;
