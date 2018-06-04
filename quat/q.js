@@ -243,9 +243,10 @@ PlatonicGenerator.prototype = {
       return [Quat(Math.cos(ang), dx*Math.sin(ang), dy*Math.sin(ang), 0),
               Quat(Math.cos(ang), -dx*Math.sin(ang), dy*Math.sin(ang), 0)] ;
    },
-   'octahedron': // octahedron is the same as the cube
+   'octahedron':
    function() {
-      return [] ;
+      var s5 = Math.sqrt(0.5) ;
+      return [Quat(0.5, 0.5, 0.5, 0.5), Quat(s5, 0, 0, s5)] ;
    },
    'closure': // compute the closure of a set of generators
    // This is quadratic in the result size.  Also, it has no protection
@@ -338,12 +339,16 @@ PlatonicGenerator.prototype = {
 
 // test some things
 var pg = PlatonicGenerator() ;
-var g = pg.icosahedron() ;
+var g = pg.octahedron() ;
+var baseplane = g[0] ;
 var rotations = pg.closure(g) ;
 console.log("We see " + rotations.length + " rotations.") ;
-var baseplanerot = pg.uniqueplanes(g[0], rotations) ;
+var baseplanerot = pg.uniqueplanes(baseplane, rotations) ;
 var baseplanes = baseplanerot.map(
-                           function(_){ return g[0].rotateplane(_) }) ;
+                           function(_){ return baseplane.rotateplane(_) }) ;
 console.log("We see " + baseplanes.length + " base planes.") ;
+for (var i=0; i<baseplanes.length; i++) {
+   console.log("Base plane " + i + " is " + baseplanes[i]) ;
+}
 var baseface = pg.getface(baseplanes) ;
 console.log("Basic face has " + baseface.length + " vertices.") ;
