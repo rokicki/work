@@ -387,9 +387,14 @@ console.log("Basic face has " + baseface.length + " vertices.") ;
 var facenormal = baseplanes[0].makenormal() ;
 var edgenormal = baseplanes[0].sum(baseplanes[1]).makenormal() ;
 var vertexnormal = baseface[0].makenormal() ;
+console.log("Facenormal is " + facenormal) ;
+console.log("Edgenormal is " + edgenormal) ;
+console.log("Vertexnormal is " + vertexnormal) ;
 
 var cutplanes = [] ;
-cutplanes.push(facenormal.makecut(0.47)) ;
+cutplanes.push(facenormal.makecut(1/3)) ;
+// cutplanes.push(vertexnormal.makecut(0.3)) ;
+cutplanes.push(edgenormal.makecut(0.6)) ;
 var moveplanes = [] ;
 var faces = [baseface] ;
 
@@ -479,8 +484,8 @@ for (var i=0; i<moverotations.length; i++) {
    var a = moverotations[i] ;
    var goodnormal = a[0].makenormal() ;
    for (var j=0; j<a.length; j++)
-      if (goodnormal.dist(a[i].makenormal()) > eps)
-         a[i] = a[i].smul(-1) ;
+      if (goodnormal.dist(a[j].makenormal()) > eps)
+         a[j] = a[j].smul(-1) ;
    a.sort(function(a,b){return a.angle-b.angle}) ;
 }
 var sizes = moverotations.map(function(_){return _.length}) ;
@@ -621,4 +626,68 @@ for (var i=0; i<cubies.length; i++) {
 
 for (var i=0; i<cubieords.length; i++) {
    console.log("Orbit " + i + " count " + cubieords[i]) ;
+}
+
+// Make the faces available to threejs.
+
+var myfaces =
+      faces.map(function(_){return _.map(function(_){return [_.b,_.c,_.d]})}) ;
+
+// rendering code
+
+var renderer = null, scene = null, camera = null, obj = null ;
+var duration = 100000 ;
+var currentTime = Date.now() ;
+function animate() {
+   var now = Date.now() ;
+   var deltat = now - currentTime ;
+   currentTime = now ;
+   var fract = deltat / duration ;
+   var angle = Math.PI * 2 * fract ;
+   obj.rotation.y += angle;
+}
+function run() {
+   requestAnimationFrame(function() { run(); });
+   renderer.render(scene, camera) ;
+   animate() ;
+}
+function display() {
+   var canvas = document.getElementById("webglcanvas") ;
+   renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true}) ;
+   renderer.setSize(canvas.width, canvas.height) ;
+   scene = new THREE.Scene() ;
+   camera =
+         new THREE.PerspectiveCamera(45, canvas.width/canvas.height, 1, 4000) ;
+   scene.add(camera) ;
+   var map = {vertexColors: THREE.VertexColors} ;
+// var material = new THREE.MeshPhongMaterial(map) ;
+   var material = new THREE.MeshBasicMaterial(map) ;
+   var geometry = new THREE.Geometry() ;
+   for (var f=0; f<myfaces.length; f++) {
+      var c = new THREE.Color(Math.random(), Math.random(), Math.random()) ;
+      for (var g=0; g<myfaces[f].length; g++) {
+         var v =
+      new THREE.Vector3(myfaces[f][g][0], myfaces[f][g][1], myfaces[f][g][2]) ;
+         myfaces[f][g] = geometry.vertices.length  ;
+         geometry.vertices.push(v) ;
+      }
+      for (var g=1; g+1<myfaces[f].length; g++) {
+         var face =
+                new THREE.Face3(myfaces[f][0], myfaces[f][g], myfaces[f][g+1]) ;
+         face.vertexColors[0] = c ;
+         face.vertexColors[1] = c ;
+         face.vertexColors[2] = c ;
+         geometry.faces.push(face) ;
+      }
+   }
+   geometry.computeFaceNormals() ;
+   obj = new THREE.Mesh(geometry, material) ;
+   obj.position.z = -8 ;
+   obj.rotation.x = Math.PI/5 ;
+   obj.rotation.y = Math.PI/5 ;
+   scene.add(obj) ;
+// var light = new THREE.DirectionalLight(0xffffff, 1.5) ;
+// light.position.set(0, 0, 1) ;
+// scene.add(light) ;
+   run() ;
 }
