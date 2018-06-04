@@ -1,7 +1,12 @@
 "use strict" ;
 
-// Global epsilon; any difference less than this is ignored.
-// We need to package this better.
+//  Global epsilon; any difference less than this is ignored.
+//  We need to package this better.
+//
+//  This code is *not* efficient in its puzzle construction, as it
+//  always uses simple lists and simple distance functions when
+//  uniquifying sets of objects.  We accept this to keep the code
+//  simple for now.
 
 var eps = 1e-9 ;
 
@@ -126,11 +131,13 @@ Quat.prototype = {
       return 0 ;
    },
    'cutfaces': // Cut a set of faces by a plane and return new set
-   function(q, faces) {
+   function(faces) {
+      var that = this ; // welcome to Javascript
+      var d = this.a ;
       var nfaces = [] ;
       for (var j=0; j<faces.length; j++) {
          var face = faces[j] ;
-         var inout = face.map(function(_){ return this.side(_.dot(q)-d)}) ;
+         var inout = face.map(function(_){ return that.side(_.dot(that)-d)}) ;
          var seen = 0 ;
          for (var i=0; i<inout.length; i++) {
             seen |= 1<<(inout[i]+1) ;
@@ -144,8 +151,8 @@ Quat.prototype = {
                   }
                   var kk = (k + 1) % face.length ;
                   if (inout[k] + inout[kk] == 0 && inout[k] != 0) {
-                     var vk = face[k].dot(q) - d ;
-                     var vkk = face[kk].dot(q) - d ;
+                     var vk = face[k].dot(this) - d ;
+                     var vkk = face[kk].dot(this) - d ;
                      var r = vk / (vk - vkk) ;
                      var pt = face[k].smul(1-r).sum(face[kk].smul(r)) ;
                      nface.push(pt) ;
@@ -198,11 +205,20 @@ Quat.prototype = {
          s = s.sum(face[i]) ;
       return s.smul(1.0/face.length) ;
    },
+   'makecut': // make a cut from a normal vector
+   function(r) {
+      return Quat(r, this.b, this.c, this.d) ;
+   }
 } ;
 
 // Next we define a class that yields quaternion generators for each of
-// the five platonic solids.  We assume one of the faces is exactly
-// horizontal to start.
+// the five platonic solids.  The quaternion generators chosen are
+// chosen specifically so that the first quaternion doubles as a plane
+// description that yields the given Platonic solid (so for instance, the
+// cubical group and octahedral group are identical in math, but we
+// give distinct representations choosing the first quaternion so that
+// we get the desired figure.)  Our convention is one vertex of the
+// shape points precisely down.
 
 function PlatonicGenerator() {
    if (this instanceof PlatonicGenerator) {
@@ -339,7 +355,11 @@ PlatonicGenerator.prototype = {
 
 // test some things
 var pg = PlatonicGenerator() ;
-var g = pg.icosahedron() ;
+var g = pg.cube() ;
+
+// Other choices of base planes can be interesting but we stick with the
+// basic Platonic solids for now.
+
 var baseplane = g[0] ;
 var rotations = pg.closure(g) ;
 console.log("We see " + rotations.length + " rotations.") ;
@@ -349,3 +369,37 @@ var baseplanes = baseplanerot.map(
 console.log("We see " + baseplanes.length + " base planes.") ;
 var baseface = pg.getface(baseplanes) ;
 console.log("Basic face has " + baseface.length + " vertices.") ;
+
+// make normals for our cuts.  We assume the first two faces are
+// adjacent (which they are, by the way we construct them).
+
+var facenormal = baseplanes[0].makenormal() ;
+var edgenormal = baseplanes[0].sum(baseplanes[1]).makenormal() ;
+var vertexnormal = baseface[0].makenormal() ;
+
+var cutplanes = [] ;
+cutplanes.push(facenormal.makecut(1/3)) ;
+var moveplanes = [] ;
+var faces = [baseface] ;
+
+// expand cutplanes by rotations.  We only change one face here.
+
+for (var c=0; c<cutplanes.length; c++) {
+   for (var i=0; i<rotations.length; i++) {
+      var q = cutplanes[c].rotateplane(rotations[i]) ;
+      var seen = false ;
+      for (var j=0; j<moveplanes.length; j++) {
+         if (q.sameplane(moveplanes[j])) {
+            seen = true ;
+            break ;
+         }
+      }
+      if (!seen) {
+         moveplanes.push(q) ;
+         faces = q.cutfaces(faces) ;
+      }
+   }
+}
+
+console.log("Faces is now " + faces.length) ;
+console.log("Move planes is " + moveplanes.length) ;
