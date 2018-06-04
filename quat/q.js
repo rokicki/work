@@ -339,7 +339,7 @@ PlatonicGenerator.prototype = {
 
 // test some things
 var pg = PlatonicGenerator() ;
-var g = pg.octahedron() ;
+var g = pg.icosahedron() ;
 var baseplane = g[0] ;
 var rotations = pg.closure(g) ;
 console.log("We see " + rotations.length + " rotations.") ;
@@ -347,8 +347,5 @@ var baseplanerot = pg.uniqueplanes(baseplane, rotations) ;
 var baseplanes = baseplanerot.map(
                            function(_){ return baseplane.rotateplane(_) }) ;
 console.log("We see " + baseplanes.length + " base planes.") ;
-for (var i=0; i<baseplanes.length; i++) {
-   console.log("Base plane " + i + " is " + baseplanes[i]) ;
-}
 var baseface = pg.getface(baseplanes) ;
 console.log("Basic face has " + baseface.length + " vertices.") ;
