@@ -572,6 +572,7 @@ my @base = @{$g[0]} ;
 my @baseplanerot = genuniqueplanes(\@base, \@rotations) ;
 my @baseplanes = map { rotateplane($_, \@base) } @baseplanerot ;
 my @baseface = getface(@baseplanes) ;
+print "Base face has ", scalar @baseface, " vertices.\n" ;
 #
 #   From this face we can pick out normals for face, vertex, and edge.
 #

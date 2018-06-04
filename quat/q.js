@@ -33,7 +33,7 @@ Quat.prototype = {
    },
    'toString': // pretty-print a quat
    function() {
-      return '[' + this.a + ',' + this.b + ',' + this.c + ',' + this.d + ']' ;
+      return 'Q[' + this.a + ',' + this.b + ',' + this.c + ',' + this.d + ']' ;
    },
    'dist': // Euclidean distance between two quaternions
    function(q) {
@@ -89,6 +89,15 @@ Quat.prototype = {
       var t = q.mul(Quat(0, this.b, this.c, this.d)).mul(q.invrot()) ;
       t.a = this.a ;
       return t ;
+   },
+   'rotatepoint': // rotate a point
+   function(q) {
+      return q.mul(this).mul(q.invrot()) ;
+   },
+   'rotateface': // rotate a face by this Q.
+   function(face) {
+      var that = this ;
+      return face.map(function(_){return _.rotatepoint(that)}) ;
    },
    'intersect3': // find the intersection of three planes if there is one
    function(p2, p3) {
@@ -167,9 +176,9 @@ Quat.prototype = {
       return nfaces ;
    },
    'faceside': // which side of a plane is a face on?
-   function(f) {
+   function(face) {
       var d = this.a ;
-      for (var i=0; i<f.length; i++) {
+      for (var i=0; i<face.length; i++) {
          var s = this.side(face[i].dot(this)-d) ;
          if (s != 0)
             return s ;
@@ -485,8 +494,11 @@ console.log("Move rotation sets: " + sizes) ;
 //  plane.  This allows us to take a set of stickers and break
 //  them up into cubie sets.
 
-var cubies = {} ;
-var facelists = {} ;
+var cubiehash = {} ;
+var facelisthash = {} ;
+var cubiekey = {} ;
+var cubiekeys = [] ;
+var cubies = [] ;
 function keyface(face) {
    var s = '' ;
    for (var i=0; i<moveplanesets.length; i++) {
@@ -501,11 +513,112 @@ function keyface(face) {
 for (var i=0; i<faces.length; i++) {
    var face = faces[i] ;
    var s = keyface(face) ;
-   if (!cubies[s]) {
-      cubies[s] = [] ;
-      facelists[s] = [] ;
+   if (!cubiehash[s]) {
+      cubiekey[s] = cubies.length ;
+      cubiekeys.push(s) ;
+      cubiehash[s] = [] ;
+      facelisthash[s] = [] ;
+      cubies.push(cubiehash[s]) ;
    }
-   facelists[s].push(i) ;
-   cubies[s].push(face) ;
+   facelisthash[s].push(i) ;
+   cubiehash[s].push(face) ;
 }
-console.log("Cubies: " + Object.keys(cubies).length) ;
+console.log("Cubies: " + Object.keys(cubiehash).length) ;
+
+//  Sort the cubies around each corner so they are clockwise.  Only
+//  relevant for cubies that actually are corners (three or more
+//  faces).  In general cubies might have many faces; for icosohedrons
+//  there are five faces on the corner cubies.
+
+for (var k=0; k<cubies.length; k++) {
+   var cubie = cubies[k] ;
+   if (cubie.length < 3)
+      continue ;
+   var s = keyface(cubie[0]) ;
+   var facelist = facelisthash[s] ;
+   var cm = cubie.map(function(_){return Quat.prototype.centermassface(_)}) ;
+   var cmall = Quat.prototype.centermassface(cm) ;
+   while (true) {
+      var changed = false ;
+      for (var i=0; i<cubie.length; i++) {
+         var j = (i + 1) % cubie.length ;
+         if (cmall.dot(cm[i].cross(cm[j])) < 0) {
+            var t = cubie[i] ;
+            cubie[i] = cubie[j] ;
+            cubie[j] = t ;
+            var u = cm[i] ;
+            cm[i] = cm[j] ;
+            cm[j] = u ;
+            var v = facelist[i] ;
+            facelist[i] = facelist[j] ;
+            facelist[j] = v ;
+            changed = 1 ;
+         }
+      }
+      if (!changed)
+         break ;
+   }
+}
+
+//  Build an array that takes each face to a cubie ordinal and a
+//  face number.
+
+var facetocubies = [] ;
+for (var i=0; i<faces.length; i++) {
+   var key = keyface(faces[i]) ;
+   for (var j=0; j<facelisthash[key].length; j++)
+      if (i==facelisthash[key][j]) {
+         facetocubies.push([cubiehash[key], j]) ;
+         break ;
+      }
+}
+function findface(face) {
+   return cubiekey[keyface(face)];
+}
+
+//  Calculate the orbits of each cubie.
+
+var typenames = ['?', 'CENTER', 'EDGE', 'CORNER', 'C4RNER', 'C5RNER'] ;
+var cubiesetname = [] ;
+var cubietypecounts = [0, 0, 0, 0, 0, 0] ;
+var orbitoris = [] ;
+var seen = [] ;
+var cubiesetnum = 0 ;
+var cubiesetnums = [] ;
+var cubieordnums = [] ;
+var cubieords = [] ;
+var cubiesetnumhash = {} ;
+for (var i=0; i<cubies.length; i++) {
+   if (seen[i])
+      continue ;
+   var cubie = cubies[i] ;
+   cubieords.push(0) ;
+   var facecnt = cubie.length ;
+   var typectr = cubietypecounts[facecnt]++ ;
+   var typename = typenames[facecnt] + (typectr == 0 ? '' : (typectr+1)) ;
+   cubiesetname[cubiesetnum] = typename ;
+   orbitoris[cubiesetnum] = facecnt ;
+   var q = [i] ;
+   var qg = 0 ;
+   seen[i] = true ;
+   while (qg < q.length) {
+      var s = q[qg++] ;
+      cubiesetnums[s] = cubiesetnum ;
+      cubieordnums[s] = cubieords[cubiesetnum]++ ;
+      for (var j=0; j<moverotations.length; j++)
+         for (var k=0; k<moverotations[j].length; k++) {
+            var tq = findface(moverotations[j][k].rotateface(cubies[s][0])) ;
+            if (!seen[tq]) {
+               q.push(tq) ;
+               seen[tq] = true ;
+            }
+         }
+   }
+   cubiesetnum++ ;
+}
+
+// show the orbits
+
+for (var i=0; i<cubieords.length; i++) {
+   console.log("Orbit " + i + " count " + cubieords[i]) ;
+}
