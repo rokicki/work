@@ -1,6 +1,12 @@
 "use strict" ;
 
-// Next we need a quaternion class.  We use this to represent rotations,
+// Global epsilon; any difference less than this is ignored.
+// We need to package this better.
+
+var eps = 1e-9 ;
+
+
+// We need a quaternion class.  We use this to represent rotations,
 // planes, and points.
 
 function Quat(a_, b_, c_, d_) {
@@ -42,6 +48,15 @@ Quat.prototype = {
       var d = Math.sqrt(this.dot(this)) ;
       return Quat(this.a/d, this.b/d, this.c/d, this.d/d) ;
    },
+   'makenormal': // make a normal vector from a plane or quat
+   function() {
+      return Quat(0, this.b, this.c, this.d).normalize() ;
+   },
+   'normalizeplane': // normalize a plane
+   function() {
+      var d = Math.hypot(this.b, this.c, this.d) ;
+      return Quat(this.a/d, this.b/d, this.c/d, this.d/d) ;
+   },
    'smul': // scalar multiplication
    function(m) {
       return Quat(this.a*m, this.b*m, this.c*m, this.d*m) ;
@@ -67,17 +82,16 @@ Quat.prototype = {
    'rotateplane': // rotate a plane using a quaternion
    function(q) {
       var t = q.mul(Quat(0, this.b, this.c, this.d)).mul(q.invrot()) ;
-      t.a = p.a ;
+      t.a = this.a ;
       return t ;
    },
    'intersect3': // find the intersection of three planes if there is one
    function(p2, p3) {
-      var det = det3x3(this.b, this.c, this.d,
-                       p2.b, p2.c, p2.d,
-                       p3.b, p3.c, p3.d) ;
-      if (Math.abs(det) < eps) {
-         return [] ;
-      }
+      var det = this.det3x3(this.b, this.c, this.d,
+                            p2.b, p2.c, p2.d,
+                            p3.b, p3.c, p3.d) ;
+      if (Math.abs(det) < eps)
+         return false ;
       return Quat(0,
                   this.det3x3(this.a, this.c, this.d,
                               p2.a, p2.c, p2.d, p3.a, p3.c, p3.d)/det,
@@ -95,21 +109,96 @@ Quat.prototype = {
          return p ;
       for (var i=0; i<planes.length; i++) {
          if (i != p1 && i != p2 && i != p3) {
-            var dt = planes[i].b * p.x + planes[i].c * p.y + planes[i].d * p.z ;
+            var dt = planes[i].b * p.b + planes[i].c * p.c + planes[i].d * p.d ;
             if ((planes[i].a > 0 && dt > planes[i].a) ||
-                (planes[i].a < 0 && dt < planes[i].a)) {
-               return [] ;
-            }
+                (planes[i].a < 0 && dt < planes[i].a))
+               return false ;
          }
       }
       return p ;
    },
-}
-
-// Global epsilon; any difference less than this is ignored.
-// We need to package this better.
-
-var eps = 1e-9 ;
+   'side': // is this point close to the origin, or on one or the other side?
+   function(x) {
+      if (x > eps)
+         return 1 ;
+      if (x < -eps)
+         return -1 ;
+      return 0 ;
+   },
+   'cutfaces': // Cut a set of faces by a plane and return new set
+   function(q, faces) {
+      var nfaces = [] ;
+      for (var j=0; j<faces.length; j++) {
+         var face = faces[j] ;
+         var inout = face.map(function(_){ return this.side(_.dot(q)-d)}) ;
+         var seen = 0 ;
+         for (var i=0; i<inout.length; i++) {
+            seen |= 1<<(inout[i]+1) ;
+         }
+         if ((seen & 5) == 5) { // saw both sides
+            for (var s=-1; s<=1; s += 2) {
+               var nface = [] ;
+               for (var k=0; k<face.length; k++) {
+                  if (inout[k] == s || inout[k] == 0) {
+                     nface.push(face[k]) ;
+                  }
+                  var kk = (k + 1) % face.length ;
+                  if (inout[k] + inout[kk] == 0 && inout[k] != 0) {
+                     var vk = face[k].dot(q) - d ;
+                     var vkk = face[kk].dot(q) - d ;
+                     var r = vk / (vk - vkk) ;
+                     var pt = face[k].smul(1-r).sum(face[kk].smul(r)) ;
+                     nface.push(pt) ;
+                  }
+               }
+               nfaces.push(nface) ;
+            }
+         } else { // no split
+            nfaces.push(face) ;
+         }
+      }
+      return nfaces ;
+   },
+   'faceside': // which side of a plane is a face on?
+   function(p, f) {
+      var d = p[0] ;
+      for (var i=0; i<f.length; i++) {
+         var s = this.side(face[i].dot(p)-d) ;
+         if (s != 0)
+            return s ;
+      }
+      throw "Could not determine side of plane in faceside" ;
+   },
+   'expandfaces': // given a set of faces, expand it by a rotation set
+   function(rots, faces) {
+      var nfaces = [] ;
+      for (var i=0; i<rots.length; i++) {
+         for (var k=0; k<faces.length; k++) {
+            var face = faces[k] ;
+            var nface = [] ;
+            for (var j=0; j<face.length; j++) {
+               q = face[j].rotateplane(rots[i]) ;
+               nface.push(q) ;
+            }
+            nfaces.push(nface) ;
+         }
+      }
+      return nfaces ;
+   },
+   'sameplane': // are two planes the same?
+   function(p) {
+      var a = this.normalize() ;
+      var b = p.normalize() ;
+      return a.dist(b) < eps || a.dist(b.smul(-1)) < eps ;
+   },
+   'centermassface': // calculate a center of a face by averaging points
+   function(face) {
+      var s = Quat(0, 0, 0, 0) ;
+      for (var i=0; i<face.length; i++)
+         s = s.sum(face[i]) ;
+      return s.smul(1.0/face.length) ;
+   },
+} ;
 
 // Next we define a class that yields quaternion generators for each of
 // the five platonic solids.  We assume one of the faces is exactly
@@ -192,7 +281,7 @@ PlatonicGenerator.prototype = {
       for (var i=0; i<g.length; i++) {
          var p2 = p.rotateplane(g[i]) ;
          var seen = false ;
-         for (var j=0; j<planes.length; p++) {
+         for (var j=0; j<planes.length; j++) {
             if (p2.dist(planes[j]) < eps) {
                seen = true ;
                break ;
@@ -234,14 +323,27 @@ PlatonicGenerator.prototype = {
          for (var i=0; i<face.length; i++) {
             var j = (i + 1) % face.length ;
             if (planes[0].dot(face[i].cross(face[j])) < 0) {
-               var t = faces[i] ;
-               faces[i] = faces[j] ;
-               faces[j] = t ;
+               var t = face[i] ;
+               face[i] = face[j] ;
+               face[j] = t ;
                changed = true ;
             }
          }
          if (!changed)
             break ;
       }
+      return face ;
    }
 } ;
+
+// test some things
+var pg = PlatonicGenerator() ;
+var g = pg.icosahedron() ;
+var rotations = pg.closure(g) ;
+console.log("We see " + rotations.length + " rotations.") ;
+var baseplanerot = pg.uniqueplanes(g[0], rotations) ;
+var baseplanes = baseplanerot.map(
+                           function(_){ return g[0].rotateplane(_) }) ;
+console.log("We see " + baseplanes.length + " base planes.") ;
+var baseface = pg.getface(baseplanes) ;
+console.log("Basic face has " + baseface.length + " vertices.") ;
