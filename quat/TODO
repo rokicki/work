@@ -1,4 +1,11 @@
+Generate flattened SVG net representation to integrate with Lucas
+
+Catchup
+   Add GAP file generation
+   Add ksolve file generation
+
 Presentation
+   Add one-face display
    Add borders between faces somehow
 
 Simulation
