@@ -402,6 +402,9 @@ PuzzleGeometry.prototype = {
    // we probably don't want to display or manipulate this one.  How
    // short is too short is hard to say.
    function(shape, cuts) {
+      this.moveplanes = [] ;
+      this.faces = [] ;
+      this.cubies = [] ;
       var that = this ;
       var pg = this.pg ;
       var g = null ;
@@ -674,3 +677,9 @@ PuzzleGeometry.prototype = {
               function(_){return _.map(function(_){return [_.b,_.c,_.d]})}) ;
    },
 } ;
+/*
+var pg = new PuzzleGeometry('c',[['f', 1/3]]) ;
+pg.allstickers() ;
+pg = new PuzzleGeometry('c',[['f', 1/3]]) ;
+pg.allstickers() ;
+*/

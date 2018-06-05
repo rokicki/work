@@ -2,9 +2,21 @@
 <script src="three.js"></script>
 <script src="PuzzleGeometry.js"></script>
 <script>
-var pg = new PuzzleGeometry('c', [['f', 1/3]]) ;
-pg.allstickers() ;
-var myfaces = pg.getfaces() ;
+function parseDesc(s) {
+   var a = s.split(/ /).filter(Boolean) ;
+   if (a.length % 2 == 0)
+      return false ;
+   if (a[0] != 'o' && a[0] != 'c' && a[0] != 'i' && a[0] != 'd' && a[0] != 't')
+      return false ;
+   var r = [] ;
+   for (var i=1; i<a.length; i += 2) {
+      if (a[i] != 'f' && a[i] != 'v' && a[i] != 'e')
+         return false ;
+      r.push([a[i], a[i+1]]) ;
+   }
+   return [a[0], r] ;
+}
+var myfaces = null ;
 
 // rendering code
 
@@ -19,7 +31,23 @@ function animate() {
    var angle = Math.PI * 2 * fract ;
    obj.rotation.y += angle;
 }
+var lastval ;
+var textinput ;
+function checkchange() {
+   var s = textinput.value ;
+   if (s == lastval)
+      return ;
+   lastval = s ;
+   var p = parseDesc(s) ;
+   if (p) {
+      var pg = new PuzzleGeometry(p[0], p[1]) ;
+      pg.allstickers() ;
+      myfaces = pg.getfaces() ;
+      display() ;
+   }
+}
 function run() {
+   checkchange(textinput) ;
    requestAnimationFrame(function() { run(); });
    renderer.render(scene, camera) ;
    animate() ;
@@ -64,8 +92,17 @@ function display() {
 // scene.add(light) ;
    run() ;
 }
+function setup() {
+   textinput = document.getElementById('desc') ;
+   checkchange() ;
+}
 </script>
 </head>
-<body onload="display();">
-<canvas id="webglcanvas" width=600 height=600></canvas>
+<body onload="setup();">
+<table><tr><td valign="top"><canvas id="webglcanvas" width=600 height=600>
+</canvas></td>
+<td valign="top">Desc <input type=text id=desc value="c f 0.3333333333">
+</input><br>
+<div id=data></div>
+</td></tr></table>
 </body></html>
