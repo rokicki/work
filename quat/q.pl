@@ -136,6 +136,9 @@ if ($sym eq 'cube') {
 } else {
    die "Bad shape" ;
 }
+for (@g) {
+   print ">> [@{$_}]\n" ;
+}
 sub generate {
    my @g = @_ ;
    my @q = ($ident) ;
@@ -577,6 +580,8 @@ print "Base face has ", scalar @baseface, " vertices.\n" ;
 #   From this face we can pick out normals for face, vertex, and edge.
 #
 $facenormal = makenormal($baseplanes[0]) ;
+print "Baseface 0 [@{$baseface[0]}]\n" ;
+print "Baseface 1 [@{$baseface[1]}]\n" ;
 $edgenormal = makenormal(sum($baseface[0], $baseface[1])) ;
 $vertexnormal = makenormal($baseface[0]) ;
 print "$comment Facenormal @{$facenormal}\n" ;

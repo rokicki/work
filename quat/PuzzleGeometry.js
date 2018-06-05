@@ -214,7 +214,8 @@ Quat.prototype = {
    },
    'makecut': // make a cut from a normal vector
    function(r) {
-      return Quat(r, this.b, this.c, this.d) ;
+      var rr = Quat(r, this.b, this.c, this.d) ;
+      return rr ;
    }
 } ;
 
@@ -281,7 +282,7 @@ PlatonicGenerator.prototype = {
       var q = [Quat(1, 0, 0, 0)] ;
       for (var i=0; i<q.length; i++) {
          for (var j=0; j<g.length; j++) {
-            var ns = q[i].mul(g[j]) ;
+            var ns = g[j].mul(q[i]) ;
             var negns = ns.smul(-1) ;
             var seen = false ;
             for (var k=0; k<q.length; k++) {
@@ -402,10 +403,10 @@ PuzzleGeometry.prototype = {
    // we probably don't want to display or manipulate this one.  How
    // short is too short is hard to say.
    function(shape, cuts) {
+      var that = this ;
       this.moveplanes = [] ;
       this.faces = [] ;
       this.cubies = [] ;
-      var that = this ;
       var pg = this.pg ;
       var g = null ;
       switch(shape) {
@@ -426,8 +427,8 @@ PuzzleGeometry.prototype = {
       this.baseface = pg.getface(this.baseplanes) ;
       console.log("Basic face has " + this.baseface.length + " vertices.") ;
       this.facenormal = this.baseplanes[0].makenormal() ;
-      this.edgenormal = this.baseplanes[0].sum(
-                                          this.baseplanes[1]).makenormal() ;
+      this.edgenormal = this.baseface[0].sum(
+                                          this.baseface[1]).makenormal() ;
       this.vertexnormal = this.baseface[0].makenormal() ;
       var cutplanes = [] ;
       for (var i=0; i<cuts.length; i++) {
@@ -440,7 +441,11 @@ PuzzleGeometry.prototype = {
          }
          cutplanes.push(normal.makecut(cuts[i][1])) ;
       }
-      var faces = [this.baseface] ;
+      var boundary = Quat(1,
+                      this.facenormal.b, this.facenormal.c, this.facenormal.d) ;
+      var planerot = pg.uniqueplanes(boundary, this.rotations) ;
+      var planes = planerot.map(function(_){return boundary.rotateplane(_)}) ;
+      var faces = [pg.getface(planes)] ;
       // expand cutplanes by rotations.  We only work with one face here.
       for (var c=0; c<cutplanes.length; c++) {
          for (var i=0; i<this.rotations.length; i++) {
@@ -677,9 +682,10 @@ PuzzleGeometry.prototype = {
               function(_){return _.map(function(_){return [_.b,_.c,_.d]})}) ;
    },
 } ;
-/*
-var pg = new PuzzleGeometry('c',[['f', 1/3]]) ;
-pg.allstickers() ;
-pg = new PuzzleGeometry('c',[['f', 1/3]]) ;
-pg.allstickers() ;
-*/
+if (process.argv && process.argv.length >= 3) {
+   var cuts = [] ;
+   for (var i=3; i<process.argv.length; i += 2)
+      cuts.push([process.argv[i], process.argv[i+1]]) ;
+   var pg = new PuzzleGeometry(process.argv[2], cuts) ;
+   pg.allstickers() ;
+}
