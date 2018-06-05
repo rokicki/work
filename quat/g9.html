@@ -43,6 +43,12 @@ function checkchange() {
       var pg = new PuzzleGeometry(p[0], p[1]) ;
       pg.allstickers() ;
       myfaces = pg.getfaces() ;
+      var desc =
+         "Faces " + pg.baseplanerot.length + "<BR>" +
+         "Stickers per face " + pg.stickersperface + "<BR>" +
+         "Cubies " + pg.cubies.length + "<BR>" +
+         "Short edge " + pg.shortedge + "<BR>" ;
+      document.getElementById('data').innerHTML = desc ;
       display() ;
    }
 }
@@ -101,7 +107,7 @@ function setup() {
 <body onload="setup();">
 <table><tr><td valign="top"><canvas id="webglcanvas" width=600 height=600>
 </canvas></td>
-<td valign="top">Desc <input type=text id=desc value="c f 0.3333333333">
+<td valign="top">Desc <input type=text id=desc value="c f 0.3333333333" size="50">
 </input><br>
 <div id=data></div>
 </td></tr></table>

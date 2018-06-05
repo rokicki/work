@@ -397,6 +397,7 @@ PuzzleGeometry.prototype = {
    'faces': [],         // all the stickers
    'stickersperface': 0, // number of stickers per face
    'cubies': [],        // the cubies
+   'shortedge': 0,      // shortest edge
    'create': // create the shape, doing all the essential geometry
    // create only goes far enough to figure out how many stickers per
    // face, and what the short edge is.  If the short edge is too short,
