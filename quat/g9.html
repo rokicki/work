@@ -47,7 +47,9 @@ function checkchange() {
          "Faces " + pg.baseplanerot.length + "<BR>" +
          "Stickers per face " + pg.stickersperface + "<BR>" +
          "Cubies " + pg.cubies.length + "<BR>" +
-         "Short edge " + pg.shortedge + "<BR>" ;
+         "Short edge " + pg.shortedge + "<BR>" +
+         "Edge distance " + pg.edgedistance + "<BR>" +
+         "Vertex distance " + pg.vertexdistance + "<BR>" ;
       document.getElementById('data').innerHTML = desc ;
       display() ;
    }
@@ -140,6 +142,7 @@ function setup() {
 <option value="o f 0">skewb diamond</option>
 <option value="o f 0.333333333333333">octahedron diamond</option>
 <option value="i v 0.56277742225524">dogic without tips</option>
+<option value="i v 0.56277742225524 v 0.910592997310029">dogic (twenty-color)</option>
 </select>
 <div id=data></div>
 </td></tr></table>

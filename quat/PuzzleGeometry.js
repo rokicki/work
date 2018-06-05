@@ -385,19 +385,15 @@ function PuzzleGeometry(shape, cuts) {
    return this ;
 }
 PuzzleGeometry.prototype = {
-   'pg': PlatonicGenerator(),
-   'baseplane': null,   // the base plane of the base face as a quaternion
    'rotations': null,   // all members of the rotation group
    'baseplanerot': null, // unique rotations of the baseplane
-   'baseplanes': null,  // array of the boundary of the shape
-   'facenormal': null,  // face normal
-   'edgenormal': null,  // edge normal
-   'vertexnormal': null, // vertex normal
    'moveplanes': [],    // the planes that split moves
    'faces': [],         // all the stickers
    'stickersperface': 0, // number of stickers per face
    'cubies': [],        // the cubies
    'shortedge': 0,      // shortest edge
+   'vertexdistance': 0, // vertex distance
+   'edgedistance': 0,   // edge distance
    'create': // create the shape, doing all the essential geometry
    // create only goes far enough to figure out how many stickers per
    // face, and what the short edge is.  If the short edge is too short,
@@ -408,7 +404,7 @@ PuzzleGeometry.prototype = {
       this.moveplanes = [] ;
       this.faces = [] ;
       this.cubies = [] ;
-      var pg = this.pg ;
+      var pg = PlatonicGenerator() ;
       var g = null ;
       switch(shape) {
          case 'c': g = pg.cube() ; break ;
@@ -420,33 +416,36 @@ PuzzleGeometry.prototype = {
       }
       this.rotations = pg.closure(g) ;
       console.log("We see " + this.rotations.length + " rotations.") ;
-      this.baseplane = g[0] ;
-      this.baseplanerot = pg.uniqueplanes(this.baseplane, this.rotations) ;
-      this.baseplanes = this.baseplanerot.map(
-                       function(_){ return that.baseplane.rotateplane(_) }) ;
-      console.log("We see " + this.baseplanes.length + " base planes.") ;
-      this.baseface = pg.getface(this.baseplanes) ;
-      console.log("Basic face has " + this.baseface.length + " vertices.") ;
-      this.facenormal = this.baseplanes[0].makenormal() ;
-      this.edgenormal = this.baseface[0].sum(
-                                          this.baseface[1]).makenormal() ;
-      this.vertexnormal = this.baseface[0].makenormal() ;
+      var baseplane = g[0] ;
+      this.baseplanerot = pg.uniqueplanes(baseplane, this.rotations) ;
+      var baseplanes = this.baseplanerot.map(
+                       function(_){ return baseplane.rotateplane(_) }) ;
+      console.log("We see " + baseplanes.length + " base planes.") ;
+      var baseface = pg.getface(baseplanes) ;
+      console.log("Basic face has " + baseface.length + " vertices.") ;
+      var facenormal = baseplanes[0].makenormal() ;
+      var edgenormal = baseface[0].sum(baseface[1]).makenormal() ;
+      var vertexnormal = baseface[0].makenormal() ;
       var cutplanes = [] ;
       for (var i=0; i<cuts.length; i++) {
          var normal = null ;
          switch (cuts[i][0]) {
-            case 'f': normal = this.facenormal ; break ;
-            case 'v': normal = this.vertexnormal ; break ;
-            case 'e': normal = this.edgenormal ; break ;
+            case 'f': normal = facenormal ; break ;
+            case 'v': normal = vertexnormal ; break ;
+            case 'e': normal = edgenormal ; break ;
             default: throw "Bad cut argument: " + cuts[i][0] ;
          }
          cutplanes.push(normal.makecut(cuts[i][1])) ;
       }
-      var boundary = Quat(1,
-                      this.facenormal.b, this.facenormal.c, this.facenormal.d) ;
+      var boundary = Quat(1, facenormal.b, facenormal.c, facenormal.d) ;
       var planerot = pg.uniqueplanes(boundary, this.rotations) ;
       var planes = planerot.map(function(_){return boundary.rotateplane(_)}) ;
       var faces = [pg.getface(planes)] ;
+      var zero = Quat(0, 0, 0, 0) ;
+      this.edgedistance = faces[0][0].sum(faces[0][1]).smul(0.5).dist(zero) ;
+      this.vertexdistance = faces[0][0].dist(zero) ;
+      console.log("Distances: face " + 1 + " edge " + this.edgedistance +
+                  " vertex " + this.vertexdistance) ;
       // expand cutplanes by rotations.  We only work with one face here.
       for (var c=0; c<cutplanes.length; c++) {
          for (var i=0; i<this.rotations.length; i++) {
