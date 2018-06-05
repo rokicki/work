@@ -192,10 +192,8 @@ Quat.prototype = {
          for (var k=0; k<faces.length; k++) {
             var face = faces[k] ;
             var nface = [] ;
-            for (var j=0; j<face.length; j++) {
-               q = face[j].rotateplane(rots[i]) ;
-               nface.push(q) ;
-            }
+            for (var j=0; j<face.length; j++)
+               nface.push(face[j].rotateplane(rots[i])) ;
             nfaces.push(nface) ;
          }
       }
@@ -228,6 +226,8 @@ Quat.prototype = {
 // give distinct representations choosing the first quaternion so that
 // we get the desired figure.)  Our convention is one vertex of the
 // shape points precisely down.
+
+// This class is immutable.
 
 function PlatonicGenerator() {
    if (this instanceof PlatonicGenerator) {
@@ -362,276 +362,321 @@ PlatonicGenerator.prototype = {
    }
 } ;
 
-// test some things; everything below here needs further
-// encapsulation (we'll design that later).
+//  Now we have a geometry class that does the 3D goemetry to calculate
+//  individual sticker information from a Platonic solid and a set of
+//  cuts.  The cuts must have the same symmetry as the Platonic solid;
+//  we even restrict them further to be either vertex-normal,
+//  edge-normal, or face-parallel cuts.  Right now our constructor takes
+//  a character solid indicator (one of c(ube), o(ctahedron), i(cosahedron),
+//  t(etradron), or d(odecahedron), followed by an array of cuts.
+//  Each cut is a character normal indicator that is either f(ace),
+//  e(dge), or v(ertex), followed by a floating point value that gives
+//  the depth of the cut where 0 is the center and 1 is the outside
+//  border of the shape in that direction.
 
-var pg = PlatonicGenerator() ;
-var g = PlatonicGenerator.prototype.cube() ;
+//  This is a heavyweight class with lots of members and construction
+//  is slow.  Be gentle.
+//
+//  Everything except a very few methods should be considered private.
 
-// Other choices of base planes can be interesting but we stick with the
-// basic Platonic solids for now.
-
-var baseplane = g[0] ;
-var rotations = pg.closure(g) ;
-console.log("We see " + rotations.length + " rotations.") ;
-var baseplanerot = pg.uniqueplanes(baseplane, rotations) ;
-var baseplanes = baseplanerot.map(
-                           function(_){ return baseplane.rotateplane(_) }) ;
-console.log("We see " + baseplanes.length + " base planes.") ;
-var baseface = pg.getface(baseplanes) ;
-console.log("Basic face has " + baseface.length + " vertices.") ;
-
-// make normals for our cuts.  We assume the first two faces are
-// adjacent (which they are, by the way we construct them).
-
-var facenormal = baseplanes[0].makenormal() ;
-var edgenormal = baseplanes[0].sum(baseplanes[1]).makenormal() ;
-var vertexnormal = baseface[0].makenormal() ;
-console.log("Facenormal is " + facenormal) ;
-console.log("Edgenormal is " + edgenormal) ;
-console.log("Vertexnormal is " + vertexnormal) ;
-
-var cutplanes = [] ;
-cutplanes.push(facenormal.makecut(1/3)) ;
-// cutplanes.push(vertexnormal.makecut(0.3)) ;
-cutplanes.push(edgenormal.makecut(0.6)) ;
-var moveplanes = [] ;
-var faces = [baseface] ;
-
-// expand cutplanes by rotations.  We only change one face here.
-
-for (var c=0; c<cutplanes.length; c++) {
-   for (var i=0; i<rotations.length; i++) {
-      var q = cutplanes[c].rotateplane(rotations[i]) ;
-      var seen = false ;
-      for (var j=0; j<moveplanes.length; j++) {
-         if (q.sameplane(moveplanes[j])) {
-            seen = true ;
-            break ;
+function PuzzleGeometry(shape, cuts) {
+   this.create(shape, cuts) ;
+   return this ;
+}
+PuzzleGeometry.prototype = {
+   'pg': PlatonicGenerator(),
+   'baseplane': null,   // the base plane of the base face as a quaternion
+   'rotations': null,   // all members of the rotation group
+   'baseplanerot': null, // unique rotations of the baseplane
+   'baseplanes': null,  // array of the boundary of the shape
+   'facenormal': null,  // face normal
+   'edgenormal': null,  // edge normal
+   'vertexnormal': null, // vertex normal
+   'moveplanes': [],    // the planes that split moves
+   'faces': [],         // all the stickers
+   'stickersperface': 0, // number of stickers per face
+   'cubies': [],        // the cubies
+   'create': // create the shape, doing all the essential geometry
+   // create only goes far enough to figure out how many stickers per
+   // face, and what the short edge is.  If the short edge is too short,
+   // we probably don't want to display or manipulate this one.  How
+   // short is too short is hard to say.
+   function(shape, cuts) {
+      var that = this ;
+      var pg = this.pg ;
+      var g = null ;
+      switch(shape) {
+         case 'c': g = pg.cube() ; break ;
+         case 'o': g = pg.octahedron() ; break ;
+         case 'i': g = pg.icosahedron() ; break ;
+         case 't': g = pg.tetrahedron() ; break ;
+         case 'd': g = pg.dodecahedron() ; break ;
+         default: throw "Bad shape argument: " + c ;
+      }
+      this.rotations = pg.closure(g) ;
+      console.log("We see " + this.rotations.length + " rotations.") ;
+      this.baseplane = g[0] ;
+      this.baseplanerot = pg.uniqueplanes(this.baseplane, this.rotations) ;
+      this.baseplanes = this.baseplanerot.map(
+                       function(_){ return that.baseplane.rotateplane(_) }) ;
+      console.log("We see " + this.baseplanes.length + " base planes.") ;
+      this.baseface = pg.getface(this.baseplanes) ;
+      console.log("Basic face has " + this.baseface.length + " vertices.") ;
+      this.facenormal = this.baseplanes[0].makenormal() ;
+      this.edgenormal = this.baseplanes[0].sum(
+                                          this.baseplanes[1]).makenormal() ;
+      this.vertexnormal = this.baseface[0].makenormal() ;
+      var cutplanes = [] ;
+      for (var i=0; i<cuts.length; i++) {
+         var normal = null ;
+         switch (cuts[i][0]) {
+            case 'f': normal = this.facenormal ; break ;
+            case 'v': normal = this.vertexnormal ; break ;
+            case 'e': normal = this.edgenormal ; break ;
+            default: throw "Bad cut argument: " + cuts[i][0] ;
          }
+         cutplanes.push(normal.makecut(cuts[i][1])) ;
       }
-      if (!seen) {
-         moveplanes.push(q) ;
-         faces = q.cutfaces(faces) ;
-      }
-   }
-}
-
-console.log("Faces is now " + faces.length) ;
-console.log("Move planes is " + moveplanes.length) ;
-
-// take our newly split base face and expand it by the rotation matrix.
-// this generates our full set of "stickers".
-
-faces = Quat.prototype.expandfaces(baseplanerot, faces) ;
-console.log("Total stickers is now " + faces.length) ;
-
-// Split moveplanes into a list of parallel planes.
-
-var moveplanesets = [] ;
-for (var i=0; i<moveplanes.length; i++) {
-   var seen = false ;
-   var q = moveplanes[i] ;
-   var qnormal = q.makenormal() ;
-   for (var j=0; j<moveplanesets.length; j++) {
-      if (qnormal.sameplane(moveplanesets[j][0].makenormal())) {
-         moveplanesets[j].push(q) ;
-         seen = true ;
-         break ;
-      }
-   }
-   if (!seen)
-      moveplanesets.push([q]) ;
-}
-
-// make the normals all face the same way in each set.
-
-for (var i=0; i<moveplanesets.length; i++) {
-   var a = moveplanesets[i].map(function(_) { return _.normalizeplane()}) ;
-   var goodnormal = a[0].makenormal() ;
-   for (var j=0; j<a.length; j++)
-      if (a[j].makenormal().dist(goodnormal) > eps)
-         a[j] = a[j].smul(-1) ;
-   a.sort(function(a,b){return a[0]-b[0];}) ;
-   moveplanesets[i] = a ;
-}
-
-var sizes = moveplanesets.map(function(_){return _.length}) ;
-console.log("Move plane sets: " + sizes) ;
-
-// for each of the move planes, find the rotations that are relevant
-
-var moverotations = [] ;
-for (var i=0; i<moveplanesets.length; i++)
-   moverotations.push([]) ;
-for (var i=0; i<rotations.length; i++) {
-   var q = rotations[i] ;
-   if (Math.abs(Math.abs(q.a)-1) < eps)
-      continue ;
-   var qnormal = q.makenormal() ;
-   for (var j=0; j<moveplanesets.length; j++)
-      if (qnormal.sameplane(moveplanesets[j][0].makenormal())) {
-         moverotations[j].push(q) ;
-         break ;
-      }
-}
-
-//  Sort the rotations by the angle of rotation.  A bit tricky because
-//  while the norms should be the same, they need not be.  So we start
-//  by making the norms the same, and then sorting.
-
-for (var i=0; i<moverotations.length; i++) {
-   var a = moverotations[i] ;
-   var goodnormal = a[0].makenormal() ;
-   for (var j=0; j<a.length; j++)
-      if (goodnormal.dist(a[j].makenormal()) > eps)
-         a[j] = a[j].smul(-1) ;
-   a.sort(function(a,b){return a.angle-b.angle}) ;
-}
-var sizes = moverotations.map(function(_){return _.length}) ;
-console.log("Move rotation sets: " + sizes) ;
-
-//  Cubies are split by move plane sets.  For each cubie we can
-//  average its points to find a point on the interior of that
-//  cubie.  We can then check that point against all the move
-//  planes and from that derive a coordinate for the cubie.
-//  This also works for faces; no face should ever lie on a move
-//  plane.  This allows us to take a set of stickers and break
-//  them up into cubie sets.
-
-var cubiehash = {} ;
-var facelisthash = {} ;
-var cubiekey = {} ;
-var cubiekeys = [] ;
-var cubies = [] ;
-function keyface(face) {
-   var s = '' ;
-   for (var i=0; i<moveplanesets.length; i++) {
-      var t = 0 ;
-      for (var j=0; j<moveplanesets[i].length; j++)
-         if (moveplanesets[i][j].faceside(face) > 0)
-            t++ ;
-      s = s + ' ' + t ;
-   }
-   return s ;
-}
-for (var i=0; i<faces.length; i++) {
-   var face = faces[i] ;
-   var s = keyface(face) ;
-   if (!cubiehash[s]) {
-      cubiekey[s] = cubies.length ;
-      cubiekeys.push(s) ;
-      cubiehash[s] = [] ;
-      facelisthash[s] = [] ;
-      cubies.push(cubiehash[s]) ;
-   }
-   facelisthash[s].push(i) ;
-   cubiehash[s].push(face) ;
-}
-console.log("Cubies: " + Object.keys(cubiehash).length) ;
-
-//  Sort the cubies around each corner so they are clockwise.  Only
-//  relevant for cubies that actually are corners (three or more
-//  faces).  In general cubies might have many faces; for icosohedrons
-//  there are five faces on the corner cubies.
-
-for (var k=0; k<cubies.length; k++) {
-   var cubie = cubies[k] ;
-   if (cubie.length < 3)
-      continue ;
-   var s = keyface(cubie[0]) ;
-   var facelist = facelisthash[s] ;
-   var cm = cubie.map(function(_){return Quat.prototype.centermassface(_)}) ;
-   var cmall = Quat.prototype.centermassface(cm) ;
-   while (true) {
-      var changed = false ;
-      for (var i=0; i<cubie.length; i++) {
-         var j = (i + 1) % cubie.length ;
-         if (cmall.dot(cm[i].cross(cm[j])) < 0) {
-            var t = cubie[i] ;
-            cubie[i] = cubie[j] ;
-            cubie[j] = t ;
-            var u = cm[i] ;
-            cm[i] = cm[j] ;
-            cm[j] = u ;
-            var v = facelist[i] ;
-            facelist[i] = facelist[j] ;
-            facelist[j] = v ;
-            changed = 1 ;
-         }
-      }
-      if (!changed)
-         break ;
-   }
-}
-
-//  Build an array that takes each face to a cubie ordinal and a
-//  face number.
-
-var facetocubies = [] ;
-for (var i=0; i<faces.length; i++) {
-   var key = keyface(faces[i]) ;
-   for (var j=0; j<facelisthash[key].length; j++)
-      if (i==facelisthash[key][j]) {
-         facetocubies.push([cubiehash[key], j]) ;
-         break ;
-      }
-}
-function findface(face) {
-   return cubiekey[keyface(face)];
-}
-
-//  Calculate the orbits of each cubie.
-
-var typenames = ['?', 'CENTER', 'EDGE', 'CORNER', 'C4RNER', 'C5RNER'] ;
-var cubiesetname = [] ;
-var cubietypecounts = [0, 0, 0, 0, 0, 0] ;
-var orbitoris = [] ;
-var seen = [] ;
-var cubiesetnum = 0 ;
-var cubiesetnums = [] ;
-var cubieordnums = [] ;
-var cubieords = [] ;
-var cubiesetnumhash = {} ;
-for (var i=0; i<cubies.length; i++) {
-   if (seen[i])
-      continue ;
-   var cubie = cubies[i] ;
-   cubieords.push(0) ;
-   var facecnt = cubie.length ;
-   var typectr = cubietypecounts[facecnt]++ ;
-   var typename = typenames[facecnt] + (typectr == 0 ? '' : (typectr+1)) ;
-   cubiesetname[cubiesetnum] = typename ;
-   orbitoris[cubiesetnum] = facecnt ;
-   var q = [i] ;
-   var qg = 0 ;
-   seen[i] = true ;
-   while (qg < q.length) {
-      var s = q[qg++] ;
-      cubiesetnums[s] = cubiesetnum ;
-      cubieordnums[s] = cubieords[cubiesetnum]++ ;
-      for (var j=0; j<moverotations.length; j++)
-         for (var k=0; k<moverotations[j].length; k++) {
-            var tq = findface(moverotations[j][k].rotateface(cubies[s][0])) ;
-            if (!seen[tq]) {
-               q.push(tq) ;
-               seen[tq] = true ;
+      var faces = [this.baseface] ;
+      // expand cutplanes by rotations.  We only work with one face here.
+      for (var c=0; c<cutplanes.length; c++) {
+         for (var i=0; i<this.rotations.length; i++) {
+            var q = cutplanes[c].rotateplane(this.rotations[i]) ;
+            var seen = false ;
+            for (var j=0; j<this.moveplanes.length; j++) {
+               if (q.sameplane(this.moveplanes[j])) {
+                  seen = true ;
+                  break ;
+               }
+            }
+            if (!seen) {
+               this.moveplanes.push(q) ;
+               faces = q.cutfaces(faces) ;
             }
          }
-   }
-   cubiesetnum++ ;
-}
-
-// show the orbits
-
-for (var i=0; i<cubieords.length; i++) {
-   console.log("Orbit " + i + " count " + cubieords[i]) ;
-}
-
-// Make the faces available to threejs.
-
-var myfaces =
-      faces.map(function(_){return _.map(function(_){return [_.b,_.c,_.d]})}) ;
+      }
+      this.faces = faces ;
+      console.log("Faces is now " + faces.length) ;
+      this.stickersperface = faces.length ;
+      //  Find and report the shortest edge in any of the faces.  If this
+      //  is small the puzzle is probably not practical or displayable.
+      var shortedge = 1e99 ;
+      for (var i=0; i<faces.length; i++) {
+         for (var j=0; j<faces[i].length; j++) {
+            var k = (j + 1) % faces[i].length ;
+            var t = faces[i][j].dist(faces[i][k]) ;
+            if (t < shortedge)
+               shortedge = t ;
+         }
+      }
+      this.shortedge = shortedge ;
+      console.log("Short edge is " + shortedge) ;
+   },
+   'allstickers': // next step is to calculate all the stickers and orbits
+   // We do enough work here to display the cube on the screen.
+   function() {
+      // take our newly split base face and expand it by the rotation matrix.
+      // this generates our full set of "stickers".
+      this.faces = Quat.prototype.expandfaces(this.baseplanerot, this.faces) ;
+      console.log("Total stickers is now " + this.faces.length) ;
+      // Split moveplanes into a list of parallel planes.
+      var moveplanesets = [] ;
+      for (var i=0; i<this.moveplanes.length; i++) {
+         var seen = false ;
+         var q = this.moveplanes[i] ;
+         var qnormal = q.makenormal() ;
+         for (var j=0; j<moveplanesets.length; j++) {
+            if (qnormal.sameplane(moveplanesets[j][0].makenormal())) {
+               moveplanesets[j].push(q) ;
+               seen = true ;
+               break ;
+            }
+         }
+         if (!seen)
+            moveplanesets.push([q]) ;
+      }
+      // make the normals all face the same way in each set.
+      for (var i=0; i<moveplanesets.length; i++) {
+         var a = moveplanesets[i].map(
+                              function(_) { return _.normalizeplane()}) ;
+         var goodnormal = a[0].makenormal() ;
+         for (var j=0; j<a.length; j++)
+            if (a[j].makenormal().dist(goodnormal) > eps)
+               a[j] = a[j].smul(-1) ;
+         a.sort(function(a,b){return a[0]-b[0];}) ;
+         moveplanesets[i] = a ;
+      }
+      var sizes = moveplanesets.map(function(_){return _.length}) ;
+      console.log("Move plane sets: " + sizes) ;
+      // for each of the move planes, find the rotations that are relevant
+      var moverotations = [] ;
+      for (var i=0; i<moveplanesets.length; i++)
+         moverotations.push([]) ;
+      for (var i=0; i<this.rotations.length; i++) {
+         var q = this.rotations[i] ;
+         if (Math.abs(Math.abs(q.a)-1) < eps)
+            continue ;
+         var qnormal = q.makenormal() ;
+         for (var j=0; j<moveplanesets.length; j++)
+            if (qnormal.sameplane(moveplanesets[j][0].makenormal())) {
+               moverotations[j].push(q) ;
+               break ;
+            }
+      }
+      //  Sort the rotations by the angle of rotation.  A bit tricky because
+      //  while the norms should be the same, they need not be.  So we start
+      //  by making the norms the same, and then sorting.
+      for (var i=0; i<moverotations.length; i++) {
+         var a = moverotations[i] ;
+         var goodnormal = a[0].makenormal() ;
+         for (var j=0; j<a.length; j++)
+            if (goodnormal.dist(a[j].makenormal()) > eps)
+               a[j] = a[j].smul(-1) ;
+         a.sort(function(a,b){return a.angle-b.angle}) ;
+      }
+      var sizes = moverotations.map(function(_){return _.length}) ;
+      console.log("Move rotation sets: " + sizes) ;
+      //  Cubies are split by move plane sets.  For each cubie we can
+      //  average its points to find a point on the interior of that
+      //  cubie.  We can then check that point against all the move
+      //  planes and from that derive a coordinate for the cubie.
+      //  This also works for faces; no face should ever lie on a move
+      //  plane.  This allows us to take a set of stickers and break
+      //  them up into cubie sets.
+      var cubiehash = {} ;
+      var facelisthash = {} ;
+      var cubiekey = {} ;
+      var cubiekeys = [] ;
+      var cubies = [] ;
+      var faces = this.faces ;
+      function keyface(face) {
+         var s = '' ;
+         for (var i=0; i<moveplanesets.length; i++) {
+            var t = 0 ;
+            for (var j=0; j<moveplanesets[i].length; j++)
+               if (moveplanesets[i][j].faceside(face) > 0)
+                  t++ ;
+            s = s + ' ' + t ;
+         }
+         return s ;
+      }
+      for (var i=0; i<faces.length; i++) {
+         var face = faces[i] ;
+         var s = keyface(face) ;
+         if (!cubiehash[s]) {
+            cubiekey[s] = cubies.length ;
+            cubiekeys.push(s) ;
+            cubiehash[s] = [] ;
+            facelisthash[s] = [] ;
+            cubies.push(cubiehash[s]) ;
+         }
+         facelisthash[s].push(i) ;
+         cubiehash[s].push(face) ;
+      }
+      console.log("Cubies: " + Object.keys(cubiehash).length) ;
+      //  Sort the cubies around each corner so they are clockwise.  Only
+      //  relevant for cubies that actually are corners (three or more
+      //  faces).  In general cubies might have many faces; for icosohedrons
+      //  there are five faces on the corner cubies.
+      for (var k=0; k<cubies.length; k++) {
+         var cubie = cubies[k] ;
+         if (cubie.length < 3)
+            continue ;
+         var s = keyface(cubie[0]) ;
+         var facelist = facelisthash[s] ;
+         var cm = cubie.map(
+                       function(_){return Quat.prototype.centermassface(_)}) ;
+         var cmall = Quat.prototype.centermassface(cm) ;
+         while (true) {
+            var changed = false ;
+            for (var i=0; i<cubie.length; i++) {
+               var j = (i + 1) % cubie.length ;
+               if (cmall.dot(cm[i].cross(cm[j])) < 0) {
+                  var t = cubie[i] ;
+                  cubie[i] = cubie[j] ;
+                  cubie[j] = t ;
+                  var u = cm[i] ;
+                  cm[i] = cm[j] ;
+                  cm[j] = u ;
+                  var v = facelist[i] ;
+                  facelist[i] = facelist[j] ;
+                  facelist[j] = v ;
+                  changed = true ;
+               }
+            }
+            if (!changed)
+               break ;
+         }
+      }
+      this.cubies = cubies ;
+      //  Build an array that takes each face to a cubie ordinal and a
+      //  face number.
+      var facetocubies = [] ;
+      for (var i=0; i<faces.length; i++) {
+         var key = keyface(faces[i]) ;
+         for (var j=0; j<facelisthash[key].length; j++)
+            if (i==facelisthash[key][j]) {
+               facetocubies.push([cubiehash[key], j]) ;
+               break ;
+            }
+      }
+      function findface(face) {
+         return cubiekey[keyface(face)];
+      }
+      //  Calculate the orbits of each cubie.
+      var typenames = ['?', 'CENTER', 'EDGE', 'CORNER', 'C4RNER', 'C5RNER'] ;
+      var cubiesetname = [] ;
+      var cubietypecounts = [0, 0, 0, 0, 0, 0] ;
+      var orbitoris = [] ;
+      var seen = [] ;
+      var cubiesetnum = 0 ;
+      var cubiesetnums = [] ;
+      var cubieordnums = [] ;
+      var cubieords = [] ;
+      var cubiesetnumhash = {} ;
+      for (var i=0; i<cubies.length; i++) {
+         if (seen[i])
+            continue ;
+         var cubie = cubies[i] ;
+         cubieords.push(0) ;
+         var facecnt = cubie.length ;
+         var typectr = cubietypecounts[facecnt]++ ;
+         var typename = typenames[facecnt] + (typectr == 0 ? '' : (typectr+1)) ;
+         cubiesetname[cubiesetnum] = typename ;
+         orbitoris[cubiesetnum] = facecnt ;
+         var q = [i] ;
+         var qg = 0 ;
+         seen[i] = true ;
+         while (qg < q.length) {
+            var s = q[qg++] ;
+            cubiesetnums[s] = cubiesetnum ;
+            cubieordnums[s] = cubieords[cubiesetnum]++ ;
+            for (var j=0; j<moverotations.length; j++)
+               for (var k=0; k<moverotations[j].length; k++) {
+                  var tq = 
+                       findface(moverotations[j][k].rotateface(cubies[s][0])) ;
+                  if (!seen[tq]) {
+                     q.push(tq) ;
+                     seen[tq] = true ;
+                  }
+               }
+         }
+         cubiesetnum++ ;
+      }
+      // show the orbits
+      for (var i=0; i<cubieords.length; i++) {
+         console.log("Orbit " + i + " count " + cubieords[i]) ;
+      }
+   },
+   'getfaces': // get the faces for 3d.
+   function() {
+      return this.faces.map(
+              function(_){return _.map(function(_){return [_.b,_.c,_.d]})}) ;
+   },
+} ;
+var pg = new PuzzleGeometry('c', [['f', 1/3]]) ;
+pg.allstickers() ;
+var myfaces = pg.getfaces() ;
 
 // rendering code
 
