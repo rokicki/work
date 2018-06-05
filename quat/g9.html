@@ -33,6 +33,7 @@ function animate() {
 }
 var lastval ;
 var textinput ;
+var distance ;
 function checkchange() {
    var s = textinput.value ;
    if (s == lastval)
@@ -43,6 +44,7 @@ function checkchange() {
       var pg = new PuzzleGeometry(p[0], p[1]) ;
       pg.allstickers() ;
       myfaces = pg.getfaces() ;
+      distance = pg.vertexdistance * 3 ;
       var desc =
          "Faces " + pg.baseplanerot.length + "<BR>" +
          "Stickers per face " + pg.stickersperface + "<BR>" +
@@ -97,7 +99,7 @@ function display() {
    }
    geometry.computeFaceNormals() ;
    obj = new THREE.Mesh(geometry, material) ;
-   obj.position.z = -8 ;
+   obj.position.z = -distance ;
    obj.rotation.x = Math.PI/5 ;
    obj.rotation.y = Math.PI/5 ;
    scene.add(obj) ;
