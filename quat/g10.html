@@ -102,12 +102,47 @@ function display() {
    TTk.Puzzle.TOM.palette = palette ;
    TTk.Puzzle.TOM.numFaces = Object.keys(TTk.Puzzle.TOM.faces).length ;
    TTk.Puzzle.TOM.rotation = TTk.Puzzle.SKEWB.rotation ;
- // ones we defer
-   TTk.Puzzle.TOM.moves = {} ;
+   // now we try to get moves to work.  We assign one move per move plane.
+   // but we need to convert a moveplane into a set of points.  We also
+   // need to figure out what the rotation angle is.
+   var moveplanesets = pg.moveplanesets ;
+   var moves = {} ;
+   var keys = {} ;
+   var key = 97 ; // use lowercase
+   for (var i=0; i<moveplanesets.length; i++) {
+      for (var j=0; j<moveplanesets[i].length; j++) {
+         var q = moveplanesets[i][j] ;
+         q = Quat(sc * q.a, q.b, q.c, q.d) ; // scale
+         var pts ;
+         if (Math.abs(q.b) >= Math.abs(q.c) && Math.abs(q.b) >= Math.abs(q.d)) {
+            pts = [[(-q.c-q.d)/q.b, 1, 1], [(-q.c+q.d)/q.b, 1, -1],
+                   [(+q.c+q.d)/q.b, -1, -1], [(+q.c-q.d)/q.b, -1, 1]] ;
+         } else if (Math.abs(q.c) >= Math.abs(q.b) &&
+                  Math.abs(q.c) >= Math.abs(q.d)) {
+            pts = [[1, (-q.b-q.d)/q.c, 1], [1, (-q.b+q.d)/q.c, -1],
+                   [-1, (+q.b+q.d)/q.c, -1], [-1, (+q.b-q.d)/q.c, 1]] ;
+         } else {
+            pts = [[1, 1, (-q.b-q.c)/q.d], [1, -1, (-q.b+q.c)/q.d],
+                   [-1, -1, (+q.b+q.c)/q.d], [-1, 1, (+q.b-q.c)/q.d]] ;
+         }
+         var d = Math.hypot(q.b, q.c, q.d) ;
+         for (var k=0; k<pts.length; k++) {
+            pts[k][0] += q.a*q.b/d ;
+            pts[k][1] += q.a*q.c/d ;
+            pts[k][2] += q.a*q.d/d ;
+         }
+         moves[String.fromCharCode(key)] = {plane: pts,
+              angle: 360.0/pg.movesetorders[i], type: TTk.MoveType.ABOVE} ;
+         keys[key] = String.fromCharCode(key) ;
+         key++ ;
+      }
+   }
+   TTk.Puzzle.TOM.moves = moves ;
    TTk.Puzzle.TOM.panelMoves = {} ;
-   TTk.Puzzle.TOM.keys = {} ;
-   var puz = TTk.InteractivePuzzle('TOM').size({width: 500, height: 500}) ;
-   puz('#ip1') ;
+   TTk.Puzzle.TOM.keys = keys ;
+   var puz = TTk.InteractivePuzzle('TOM') ;
+   puz.size({width: 500, height: 500})('#ip1') ;
+   puz.scramble() ;
 }
 function setup() {
    textinput = document.getElementById('desc') ;

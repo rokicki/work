@@ -388,6 +388,8 @@ PuzzleGeometry.prototype = {
    'rotations': null,   // all members of the rotation group
    'baseplanerot': null, // unique rotations of the baseplane
    'moveplanes': [],    // the planes that split moves
+   'moveplanesets': [], // the move planes, in parallel sets
+   'movesetorders': [], // the order of rotations for each move set
    'faces': [],         // all the stickers
    'stickersperface': 0, // number of stickers per face
    'cubies': [],        // the cubies
@@ -515,6 +517,7 @@ PuzzleGeometry.prototype = {
          a.sort(function(a,b){return a[0]-b[0];}) ;
          moveplanesets[i] = a ;
       }
+      this.moveplanesets = moveplanesets ;
       var sizes = moveplanesets.map(function(_){return _.length}) ;
       console.log("Move plane sets: " + sizes) ;
       // for each of the move planes, find the rotations that are relevant
@@ -543,8 +546,8 @@ PuzzleGeometry.prototype = {
                a[j] = a[j].smul(-1) ;
          a.sort(function(a,b){return a.angle-b.angle}) ;
       }
-      var sizes = moverotations.map(function(_){return _.length}) ;
-      console.log("Move rotation sets: " + sizes) ;
+      var sizes = moverotations.map(function(_){return 1+_.length}) ;
+      this.movesetorders = sizes ;
       //  Cubies are split by move plane sets.  For each cubie we can
       //  average its points to find a point on the interior of that
       //  cubie.  We can then check that point against all the move
