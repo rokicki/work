@@ -394,6 +394,7 @@ PuzzleGeometry.prototype = {
    'shortedge': 0,      // shortest edge
    'vertexdistance': 0, // vertex distance
    'edgedistance': 0,   // edge distance
+   'orbits': 0,         // count of cubie orbits
    'create': // create the shape, doing all the essential geometry
    // create only goes far enough to figure out how many stickers per
    // face, and what the short edge is.  If the short edge is too short,
@@ -671,6 +672,7 @@ PuzzleGeometry.prototype = {
          }
          cubiesetnum++ ;
       }
+      this.orbits = cubieords.length ;
       // show the orbits
       for (var i=0; i<cubieords.length; i++) {
          console.log("Orbit " + i + " count " + cubieords[i]) ;
@@ -688,4 +690,7 @@ if (process && process.argv && process.argv.length >= 3) {
       cuts.push([process.argv[i], process.argv[i+1]]) ;
    var pg = new PuzzleGeometry(process.argv[2], cuts) ;
    pg.allstickers() ;
+   console.log("Stickers " + pg.stickersperface + " cubies " +
+               pg.cubies.length + " orbits " + pg.orbits +
+                " shortedge " + pg.shortedge) ;
 }
