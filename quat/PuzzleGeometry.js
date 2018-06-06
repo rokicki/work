@@ -70,6 +70,10 @@ Quat.prototype = {
    function(q) {
       return Quat(this.a+q.a, this.b+q.b, this.c+q.c, this.d+q.d) ;
    },
+   'sub': // difference
+   function(q) {
+      return Quat(this.a-q.a, this.b-q.b, this.c-q.c, this.d-q.d) ;
+   },
    'angle': // quaternion angle
    function() {
       return 2 * Math.acos(this.a) ;
@@ -514,7 +518,7 @@ PuzzleGeometry.prototype = {
          for (var j=0; j<a.length; j++)
             if (a[j].makenormal().dist(goodnormal) > eps)
                a[j] = a[j].smul(-1) ;
-         a.sort(function(a,b){return a[0]-b[0];}) ;
+         a.sort(function(a,b){return a.a-b.a;}) ;
          moveplanesets[i] = a ;
       }
       this.moveplanesets = moveplanesets ;
