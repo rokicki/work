@@ -46,15 +46,17 @@ function doselection(el) {
    if (el.target.value != '') {
       textinput.value = el.target.value ;
       checkchange() ;
+      document.getElementById('ip1').focus() ; // this is a hack
    }
 }
+var puz = null ;
 function display() {
    if (!pg)
       return ;
    document.getElementById('ip1').innerHTML = '' ;
    var myfaces = pg.getfaces() ;
    // scale vertexdistance down to 0.5
-   var sc = 0.5 / pg.vertexdistance ;
+   var sc = 0.8 / pg.vertexdistance ;
    TTk.Puzzle.TOM = {} ;
    var panels = [] ;
    for (var i=0; i<myfaces.length; i++) {
@@ -108,7 +110,7 @@ function display() {
    var moveplanesets = pg.moveplanesets ;
    var moves = {} ;
    var keys = {} ;
-   var key = 97 ; // use lowercase
+   var key = 65 ;
    for (var i=0; i<moveplanesets.length; i++) {
       for (var j=0; j<moveplanesets[i].length; j++) {
          var q = moveplanesets[i][j] ;
@@ -140,9 +142,12 @@ function display() {
    TTk.Puzzle.TOM.moves = moves ;
    TTk.Puzzle.TOM.panelMoves = {} ;
    TTk.Puzzle.TOM.keys = keys ;
-   var puz = TTk.InteractivePuzzle('TOM') ;
-   puz.size({width: 500, height: 500})('#ip1') ;
-   puz.scramble() ;
+   console.log("Keys are " + keys) ;
+   puz = TTk.InteractivePuzzle('TOM') ;
+   puz.size({width: 500, height: 500}) ;
+   puz.moveInteract().mouse(false).keyboard(true) ;
+   puz('#ip1') ;
+// puz.scramble() ;
 }
 function setup() {
    textinput = document.getElementById('desc') ;
@@ -184,5 +189,5 @@ Desc <input type=text id=desc value="c f 0.3333333333" size="50">
 <option value="d f 0.23606797749979">starminx 2</option>
 </select>
 <div id=data></div>
-<div id="ip1"></div>
+<div id="ip1" tabindex=1></div>
 </body></html>
