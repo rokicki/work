@@ -1,0 +1,153 @@
+<html><head><title>TwistySim and PuzzleGeometry</title>
+<script src="twistysim.js"></script>
+<script src="PuzzleGeometry.js"></script>
+<script>
+function parseDesc(s) {
+   var a = s.split(/ /).filter(Boolean) ;
+   if (a.length % 2 == 0)
+      return false ;
+   if (a[0] != 'o' && a[0] != 'c' && a[0] != 'i' && a[0] != 'd' && a[0] != 't')
+      return false ;
+   var r = [] ;
+   for (var i=1; i<a.length; i += 2) {
+      if (a[i] != 'f' && a[i] != 'v' && a[i] != 'e')
+         return false ;
+      r.push([a[i], a[i+1]]) ;
+   }
+   return [a[0], r] ;
+}
+var lastval ;
+var textinput ;
+var distance ;
+var pg ;
+function checkchange() {
+   var s = textinput.value ;
+   if (s == lastval)
+      return ;
+   lastval = s ;
+   var p = parseDesc(s) ;
+   if (p) {
+      pg = new PuzzleGeometry(p[0], p[1]) ;
+      pg.allstickers() ;
+      myfaces = pg.getfaces() ;
+      distance = pg.vertexdistance * 3 ;
+      var desc =
+         "Faces " + pg.baseplanerot.length + "<BR>" +
+         "Stickers per face " + pg.stickersperface + "<BR>" +
+         "Cubies " + pg.cubies.length + "<BR>" +
+         "Short edge " + pg.shortedge + "<BR>" +
+         "Edge distance " + pg.edgedistance + "<BR>" +
+         "Vertex distance " + pg.vertexdistance + "<BR>" ;
+      document.getElementById('data').innerHTML = desc ;
+      display() ;
+   }
+}
+function doselection(el) {
+   if (el.target.value != '') {
+      textinput.value = el.target.value ;
+      checkchange() ;
+   }
+}
+function display() {
+   if (!pg)
+      return ;
+   document.getElementById('ip1').innerHTML = '' ;
+   var myfaces = pg.getfaces() ;
+   // scale vertexdistance down to 0.5
+   var sc = 0.5 / pg.vertexdistance ;
+   TTk.Puzzle.TOM = {} ;
+   var panels = [] ;
+   for (var i=0; i<myfaces.length; i++) {
+      var face = [] ;
+      for (var j=0; j<myfaces[i].length; j++) {
+         face.push([myfaces[i][j][0]*sc, myfaces[i][j][1]*sc,
+                    myfaces[i][j][2]*sc]) ;
+      }
+      panels.push(face) ;
+   }
+   TTk.Puzzle.TOM.panels = panels ;
+   var faces = {} ;
+   var key = 65 ;
+   var fc = '' ;
+   var palette = {
+      'A': "#ffffff",
+      'B': "#0000ff",
+      'C': "#00ff00",
+      'D': "#00ffff",
+      'E': "#ff0000",
+      'F': "#ff00ff",
+      'G': "#ffff00",
+      'H': "#808080",
+      'I': "#000080",
+      'J': "#ff0080",
+      'K': "#00ff80",
+      'L': "#ffff80",
+      'M': "#008000",
+      'N': "#0080ff",
+      'O': "#ff8000",
+      'P': "#ff80ff",
+      'Q': "#800000",
+      'R': "#8000ff",
+      'S': "#80ff00",
+      'T': "#80ffff",
+   } ;
+   for (var i=0; i<panels.length; i+=pg.stickersperface) {
+      faces[String.fromCharCode(key)] = panels[i] ;
+      for (var k=0; k<pg.stickersperface; k++)
+         fc = fc + String.fromCharCode(key) ;
+      key++ ;
+   }
+   TTk.Puzzle.TOM.faces = faces ;
+   TTk.Puzzle.TOM.fc = fc ;
+   TTk.Puzzle.TOM.palette = palette ;
+   TTk.Puzzle.TOM.numFaces = Object.keys(TTk.Puzzle.TOM.faces).length ;
+   TTk.Puzzle.TOM.rotation = TTk.Puzzle.SKEWB.rotation ;
+ // ones we defer
+   TTk.Puzzle.TOM.moves = {} ;
+   TTk.Puzzle.TOM.panelMoves = {} ;
+   TTk.Puzzle.TOM.keys = {} ;
+   var puz = TTk.InteractivePuzzle('TOM').size({width: 500, height: 500}) ;
+   puz('#ip1') ;
+}
+function setup() {
+   textinput = document.getElementById('desc') ;
+   document.getElementById("puzzleoptions").onchange = doselection ;
+   checkchange() ;
+   setInterval(checkchange, 0.5) ;
+}
+</script>
+</head>
+<body onload="setup();">
+Desc <input type=text id=desc value="c f 0.3333333333" size="50">
+</input><br>
+<select id="puzzleoptions">
+<option value="">custom</option>
+<option value="c f 0">2x2x2</option>
+<option value="c f 0.333333333333333">3x3x3</option>
+<option value="c f 0.5 f 0">4x4x4</option>
+<option value="c f 0.6 f 0.2">5x5x5</option>
+<option value="c f 0.666666666666667 f 0.333333333333333 f 0">6x6x6</option>
+<option value="c f 0.714285714285714 f 0.428571428571429 f 0.142857142857143">7x7x7</option>
+<option value="c f 0.75 f 0.5 f 0.25 f 0">8x8x8</option>
+<option value="c f 0.777777777777778 f 0.555555555555556 f 0.333333333333333 f 0.111111111111111">9x9x9</option>
+<option value="c f 0.8 f 0.6 f 0.4 f 0.2 f 0">10x10x10</option>
+<option value="c f 0.818181818181818 f 0.636363636363636 f 0.454545454545455 f 0.272727272727273 f 0.0909090909090909">11x11x11</option>
+<option value="c f 0.833333333333333 f 0.666666666666667 f 0.5 f 0.333333333333333 f 0.166666666666667 f 0">12x12x12</option>
+<option value="c f 0.846153846153846 f 0.692307692307692 f 0.538461538461538 f 0.384615384615385 f 0.230769230769231 f 0.0769230769230769">13x13x13</option>
+<option value="c v 0">skewb</option>
+<option value="c e 0.707106781186547">helicopter</option>
+<option value="c v 0.577350269189626">dino</option>
+<option value="t v 0.333333333333333 v 1.66666666666667">pyraminx</option>
+<option value="d f 0.7">megaminx</option>
+<option value="d f 0.64 f 0.82">gigaminx</option>
+<option value="d f 0">pentultimate</option>
+<option value="o f 0">skewb diamond</option>
+<option value="o f 0.333333333333333">octahedron diamond</option>
+<option value="i v 0.56277742225524">dogic without tips</option>
+<option value="i v 0.56277742225524 v 0.910592997310029">dogic (twenty-color)</option>
+<option value="d v 0.937962371425399">starminx</option>
+<option value="d f 0.23606797749979">starminx 2</option>
+</select>
+<div id=data></div>
+<div id="ip1"></div>
+</body></html>
