@@ -141,7 +141,7 @@ function display() {
             pts[2] = t ;
          }
          moves[String.fromCharCode(key)] = {plane: pts,
-              angle: 360.0/pg.movesetorders[i], type: TTk.MoveType.ABOVE} ;
+              angle: -360.0/pg.movesetorders[i], type: TTk.MoveType.ABOVE} ;
          keys[key] = String.fromCharCode(key) ;
          key++ ;
       }
