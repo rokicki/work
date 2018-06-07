@@ -32,3 +32,19 @@ skewb, dino work for the most part but can't support all the different
 megaminx fails when ksolve tries to compute orientation table; too many
    orientations
 helicoper doesn't understand identical positions
+
+External libraries:
+
+twistysim.js:
+
+Cannot determine license terms
+Can't find original (unobfuscated sources)
+Rendering can be slow for big puzzles (svg/DOM)
+Unintuitive mouse moves
+Shows back of stickers *colored* during twists
+
+three.js:
+
+Fast!  Even for bigger puzzles
+Have to do so much rendering work ourselves
+Marks between faces not rendered
