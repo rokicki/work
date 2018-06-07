@@ -1,5 +1,8 @@
 Generate flattened SVG net representation to integrate with Lucas
 
+Note:  Gelatinbrain/Magic Polyhedra does almost everything better at
+this point . . .
+
 Catchup
    Add GAP file generation
    Add ksolve file generation
@@ -27,15 +30,38 @@ For complicated puzzles, rather than making so many faces at the 3D
 layer, instead use fewer faces and use texturing to draw stickers and
 sticker separations.
 
-Status:
+Don't limit move "planes" to slices; allow the move planes to be a
+polytope symmetric around a line from the center of the puzzle.  This
+permits us to build a lot more puzzles without increasing the sticker
+count like crazy.
 
-3x3x3 ksolve works
-2x2x2 ksolve works
-skewb, dino work for the most part but can't support all the different
-   solving orientations yet (too many states)
-megaminx fails when ksolve tries to compute orientation table; too many
-   orientations
-helicoper doesn't understand identical positions
+Permit move planes to be curved surfaces rather than slices (maybe
+rotated splines).
+
+Similar things:
+
+gelatinbrain/magic polyhedra
+
+Excellent UI, movement, macros/recording, etc.
+Requires Windows/Linux/Mac (not webified)
+Puzzles are compiled-in; can't add one dynamically
+No jumbling, but tons of extra features
+Hundreds of puzzles already
+
+pcubes
+
+Windows-only so I can't run and evaluate
+Puzzles defined in XML, with custom scripting language for fancy features
+Hundreds of puzzles already
+Probably the best, most general program there is right now
+
+Where we want to differ:
+
+I'm mostly interested in computer solving/exploration.  So we want to
+generate GAP and ksolve input files, we want to do cube-explorer type
+things.  I'm more interested in this than in going crazy with all
+possible puzzle types.  On the other hand, exploring the *space* of
+puzzles (i.e., Platonic solids with cuts) is very interesting to me.
 
 External libraries:
 
