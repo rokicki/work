@@ -691,7 +691,8 @@ PuzzleGeometry.prototype = {
               function(_){return _.map(function(_){return [_.b,_.c,_.d]})}) ;
    },
 } ;
-if (this.process && process.argv && process.argv.length >= 3) {
+if (typeof(process) !== 'undefined' &&
+    process.argv && process.argv.length >= 3) {
    var cuts = [] ;
    for (var i=3; i<process.argv.length; i += 2)
       cuts.push([process.argv[i], process.argv[i+1]]) ;

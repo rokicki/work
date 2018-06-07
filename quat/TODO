@@ -1,3 +1,4 @@
+Add master skewb; remove dogic; add icos face
 Generate flattened SVG net representation to integrate with Lucas
 
 Catchup
@@ -23,6 +24,10 @@ Computation
    Metrics:  OBTM, SSTM, STM
    Explore distance counts
 
+For complicated puzzles, rather than making so many faces at the 3D
+layer, instead use fewer faces and use texturing to draw stickers and
+sticker separations.
+
 Status:
 
 3x3x3 ksolve works
@@ -42,6 +47,7 @@ Can't find original (unobfuscated sources)
 Rendering can be slow for big puzzles (svg/DOM)
 Unintuitive mouse moves
 Shows back of stickers *colored* during twists
+No true slice turns (touch only works for simple cases)
 
 three.js:
 
