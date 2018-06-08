@@ -36,13 +36,18 @@ permits us to build a lot more puzzles without increasing the sticker
 count like crazy.
 
 Permit move planes to be curved surfaces rather than slices (maybe
-rotated splines).
+rotated splines).  See this for example:
+
+   http://www.brandonenright.net/cgi-bin/jaaps_povray.pl
 
 Similar things:
 
 gelatinbrain/magic polyhedra
 
-Excellent UI, movement, macros/recording, etc.
+Excellent UI, movement, macros/recording, etc.  For instance, where
+   on a sticker you click influences what move is executed (so not
+   always the same for a given sticker).
+No apparent keystroke support
 Requires Windows/Linux/Mac (not webified)
 Puzzles are compiled-in; can't add one dynamically
 No jumbling, but tons of extra features
@@ -50,12 +55,15 @@ Hundreds of puzzles already
 
 pcubes
 
-Windows-only so I can't run and evaluate
+Windows-only
 Puzzles defined in XML, with custom scripting language for fancy features
 Hundreds of puzzles already
 Probably the best, most general program there is right now
 
 Where we want to differ:
+
+Cubeexplorer for pcubes/gelatinbrain; plus mobile/touchscreen UI
+Interchange formats for permutations, graphics, etc.
 
 I'm mostly interested in computer solving/exploration.  So we want to
 generate GAP and ksolve input files, we want to do cube-explorer type
@@ -69,6 +77,7 @@ twistysim.js:
 
 Cannot determine license terms
 Can't find original (unobfuscated sources)
+Drops keystrokes when animating (very frustrating)
 Rendering can be slow for big puzzles (svg/DOM)
 Unintuitive mouse moves
 Shows back of stickers *colored* during twists
