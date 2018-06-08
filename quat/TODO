@@ -1,5 +1,7 @@
 Generate flattened SVG net representation to integrate with Lucas
 
+Generate pcubes format for puzzles?
+
 Note:  Gelatinbrain/Magic Polyhedra does almost everything better at
 this point . . .
 
@@ -51,14 +53,23 @@ No apparent keystroke support
 Requires Windows/Linux/Mac (not webified)
 Puzzles are compiled-in; can't add one dynamically
 No jumbling, but tons of extra features
+Tracks move sequence; can copy, edit, etc. (But move encoding not "standard")
 Hundreds of puzzles already
 
 pcubes
 
 Windows-only
 Puzzles defined in XML, with custom scripting language for fancy features
+   (and even for normal features)
 Hundreds of puzzles already
 Probably the best, most general program there is right now
+Descriptions are not very concise; based on calculating and explicitly
+   listing faces/vertices rather than exploiting symmetry
+Drag-based moves are painful; no obvious keyboard moves
+No obvious way to extract move sequences, etc.  (No encoding of moves).
+
+Massive effort is going into, and has gone into, the pcubes program
+from a wide variety of sources.
 
 Where we want to differ:
 
@@ -82,6 +93,7 @@ Rendering can be slow for big puzzles (svg/DOM)
 Unintuitive mouse moves
 Shows back of stickers *colored* during twists
 No true slice turns (touch only works for simple cases)
+Uses control for reverse moves; can't use shift to distinguish moves
 
 three.js:
 
