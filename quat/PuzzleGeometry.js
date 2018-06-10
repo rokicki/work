@@ -587,7 +587,7 @@ PuzzleGeometry.prototype = {
          for (var j=0; j<a.length; j++)
             if (goodnormal.dist(a[j].makenormal()) > eps)
                a[j] = a[j].smul(-1) ;
-         a.sort(function(a,b){return a.angle-b.angle}) ;
+         a.sort(function(a,b){return a.angle()-b.angle()}) ;
       }
       var sizes = moverotations.map(function(_){return 1+_.length}) ;
       this.movesetorders = sizes ;
@@ -698,7 +698,7 @@ PuzzleGeometry.prototype = {
             for (var j=0; j<moverotations.length; j++)
                for (var k=0; k<moverotations[j].length; k++) {
                   var tq = 
-                   this.findcubie(moverotations[j][k].rotateface(cubies[s][0])) ;
+                  this.findcubie(moverotations[j][k].rotateface(cubies[s][0])) ;
                   if (!seen[tq]) {
                      q.push(tq) ;
                      seen[tq] = true ;
@@ -794,7 +794,7 @@ PuzzleGeometry.prototype = {
       if (slices > 30)
          throw "Too many slices for getmovesets bitmasks" ;
       var r = [] ;
-      for (var i=0; i<slices; i++)
+      for (var i=0; i<=slices; i++)
          r.push(1<<i) ;
       return r ;
    },
@@ -822,7 +822,7 @@ PuzzleGeometry.prototype = {
                }
             }
             var movename = 'M'+movenum ;
-            console.log(movename+':='+move) ;
+            console.log(movename+':='+move+";") ;
             perms.push(movename) ;
             for (var j=2; j<order; j++) {
                perms.push(movename + '^' + j) ;
@@ -832,7 +832,7 @@ PuzzleGeometry.prototype = {
       }
       console.log("Gen:=[") ;
       console.log(perms.join(',')) ;
-      console.log("]") ;
+      console.log("];") ;
    },
 } ;
 if (typeof(process) !== 'undefined' &&
