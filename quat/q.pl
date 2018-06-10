@@ -881,11 +881,13 @@ for (my $k=0; $k<@moveplanesets; $k++) {
             $slicenum[$fi2] = -1 ;
             my $face2 = [rotateface($moverotations[$k][0], @{$face})] ;
             $fi2 = findface($face2) ;
-            last if $slicenum[$fi2] != $sc ;
+            last if $slicenum[$fi2] < 0 ;
+            die "Bad movement?" if $slicenum[$fi2] != $sc ;
             push @a, $fi2 ;
             push @b, @{$facetocubies[$fi2]} ;
             $face = $face2 ;
          }
+ print "Perm is [@a]\n" ;
          push @slicemoves, [@a] if @a > 1 ;
          push @slicecmoves, [@b] if @b > 2 && !$cubiedone[$b[0]] ;
          for (my $j=0; $j<@b; $j += 2) {

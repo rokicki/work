@@ -10,7 +10,6 @@
 
 var eps = 1e-9 ;
 
-
 // We need a quaternion class.  We use this to represent rotations,
 // planes, and points.
 
@@ -22,8 +21,8 @@ function Quat(a_, b_, c_, d_) {
    }
 }
 Quat.prototype = {
-   'a':0, 'b':0, 'c':0, 'd':0, // quaternion fields; 1 i j k
-   'mul': // quaternion multiplication
+   a:0, b:0, c:0, d:0, // quaternion fields; 1 i j k
+   mul: // quaternion multiplication
    function(q) {
       return Quat(
            this.a*q.a-this.b*q.b-this.c*q.c-this.d*q.d,
@@ -31,79 +30,84 @@ Quat.prototype = {
            this.a*q.c-this.b*q.d+this.c*q.a+this.d*q.b,
            this.a*q.d+this.b*q.c-this.c*q.b+this.d*q.a) ;
    },
-   'toString': // pretty-print a quat
+   toString: // pretty-print a quat
    function() {
       return 'Q[' + this.a + ',' + this.b + ',' + this.c + ',' + this.d + ']' ;
    },
-   'dist': // Euclidean distance between two quaternions
+   dist: // Euclidean distance between two quaternions
    function(q) {
       return Math.hypot(this.a-q.a, this.b-q.b, this.c-q.c, this.d-q.d) ;
    },
-   'cross': // Cross product of two quaternions
+   cross: // Cross product of two quaternions
    function(q) {
       return Quat(0, this.c*q.d-this.d*q.c,
                   this.d*q.b-this.b*q.d, this.b*q.c-this.c*q.b) ;
    },
-   'dot': // dot product of two quaternions
+   dot: // dot product of two quaternions
    function(q) {
       return this.b*q.b+this.c*q.c+this.d*q.d ;
    },
-   'normalize': // make the magnitude be 1
+   normalize: // make the magnitude be 1
    function() {
       var d = Math.sqrt(this.dot(this)) ;
       return Quat(this.a/d, this.b/d, this.c/d, this.d/d) ;
    },
-   'makenormal': // make a normal vector from a plane or quat
+   makenormal: // make a normal vector from a plane or quat
    function() {
       return Quat(0, this.b, this.c, this.d).normalize() ;
    },
-   'normalizeplane': // normalize a plane
+   normalizeplane: // normalize a plane
    function() {
       var d = Math.hypot(this.b, this.c, this.d) ;
       return Quat(this.a/d, this.b/d, this.c/d, this.d/d) ;
    },
-   'smul': // scalar multiplication
+   smul: // scalar multiplication
    function(m) {
       return Quat(this.a*m, this.b*m, this.c*m, this.d*m) ;
    },
-   'sum': // quaternion sum
+   sum: // quaternion sum
    function(q) {
       return Quat(this.a+q.a, this.b+q.b, this.c+q.c, this.d+q.d) ;
    },
-   'sub': // difference
+   sub: // difference
    function(q) {
       return Quat(this.a-q.a, this.b-q.b, this.c-q.c, this.d-q.d) ;
    },
-   'angle': // quaternion angle
+   angle: // quaternion angle
    function() {
       return 2 * Math.acos(this.a) ;
    },
-   'invrot': // quaternion inverse rotation
+   invrot: // quaternion inverse rotation
    function() {
       return Quat(this.a, -this.b, -this.c, -this.d) ;
    },
-   'det3x3': // calculate a 3x3 determinant
+   det3x3: // calculate a 3x3 determinant
    function(a00, a01, a02, a10, a11, a12, a20, a21, a22) {
       return a00 * (a11 * a22 - a12 * a21) +
              a01 * (a12 * a20 - a10 * a22) +
              a02 * (a10 * a21 - a11 * a20) ;
    },
-   'rotateplane': // rotate a plane using a quaternion
+   rotateplane: // rotate a plane using a quaternion
    function(q) {
       var t = q.mul(Quat(0, this.b, this.c, this.d)).mul(q.invrot()) ;
       t.a = this.a ;
       return t ;
    },
-   'rotatepoint': // rotate a point
+   rotatepoint: // rotate a point
    function(q) {
       return q.mul(this).mul(q.invrot()) ;
    },
-   'rotateface': // rotate a face by this Q.
+   rotateface: // rotate a face by this Q.
    function(face) {
       var that = this ;
       return face.map(function(_){return _.rotatepoint(that)}) ;
    },
-   'intersect3': // find the intersection of three planes if there is one
+   rotatecubie: // rotate a cubie by this Q.
+   function(cubie) {
+      var that = this ;
+      return cubie.map(function(_){return that.rotateface(_)}) ;
+   },
+   intersect3: // find the intersection of three planes if there is one
    function(p2, p3) {
       var det = this.det3x3(this.b, this.c, this.d,
                             p2.b, p2.c, p2.d,
@@ -118,7 +122,7 @@ Quat.prototype = {
                   this.det3x3(this.b, this.c, this.a,
                               p2.b, p2.c, p2.a, p3.b, p3.c, p3.a)/det) ;
    },
-   'solvethreeplanes': // find intersection of three planes but only if interior
+   solvethreeplanes: // find intersection of three planes but only if interior
    // Takes three indices into a plane array, and returns the point at the
    // intersection of all three, but only if it is internal to all planes.
    function(p1, p2, p3, planes) {
@@ -135,7 +139,7 @@ Quat.prototype = {
       }
       return p ;
    },
-   'side': // is this point close to the origin, or on one or the other side?
+   side: // is this point close to the origin, or on one or the other side?
    function(x) {
       if (x > eps)
          return 1 ;
@@ -143,7 +147,7 @@ Quat.prototype = {
          return -1 ;
       return 0 ;
    },
-   'cutfaces': // Cut a set of faces by a plane and return new set
+   cutfaces: // Cut a set of faces by a plane and return new set
    function(faces) {
       var that = this ; // welcome to Javascript
       var d = this.a ;
@@ -179,7 +183,7 @@ Quat.prototype = {
       }
       return nfaces ;
    },
-   'faceside': // which side of a plane is a face on?
+   faceside: // which side of a plane is a face on?
    function(face) {
       var d = this.a ;
       for (var i=0; i<face.length; i++) {
@@ -189,7 +193,7 @@ Quat.prototype = {
       }
       throw "Could not determine side of plane in faceside" ;
    },
-   'expandfaces': // given a set of faces, expand it by a rotation set
+   expandfaces: // given a set of faces, expand it by a rotation set
    function(rots, faces) {
       var nfaces = [] ;
       for (var i=0; i<rots.length; i++) {
@@ -203,20 +207,20 @@ Quat.prototype = {
       }
       return nfaces ;
    },
-   'sameplane': // are two planes the same?
+   sameplane: // are two planes the same?
    function(p) {
       var a = this.normalize() ;
       var b = p.normalize() ;
       return a.dist(b) < eps || a.dist(b.smul(-1)) < eps ;
    },
-   'centermassface': // calculate a center of a face by averaging points
+   centermassface: // calculate a center of a face by averaging points
    function(face) {
       var s = Quat(0, 0, 0, 0) ;
       for (var i=0; i<face.length; i++)
          s = s.sum(face[i]) ;
       return s.smul(1.0/face.length) ;
    },
-   'makecut': // make a cut from a normal vector
+   makecut: // make a cut from a normal vector
    function(r) {
       var rr = Quat(r, this.b, this.c, this.d) ;
       return rr ;
@@ -242,16 +246,16 @@ function PlatonicGenerator() {
    }
 }
 PlatonicGenerator.prototype = {
-   'cube':
+   cube:
    function() {
       var s5 = Math.sqrt(0.5) ;
       return [Quat(s5, s5, 0, 0), Quat(s5, 0, s5, 0)] ;
    },
-   'tetrahedron':
+   tetrahedron:
    function() {
       return [Quat(0.5, 0.5, 0.5, 0.5), Quat(0.5, 0.5, 0.5, -0.5)] ;
    },
-   'dodecahedron':
+   dodecahedron:
    function() {
       var d36 = 2 * Math.PI / 10 ;
       var dx = 0.5 + 0.3 * Math.sqrt(5) ;
@@ -262,7 +266,7 @@ PlatonicGenerator.prototype = {
       return [Quat(Math.cos(d36), dx*Math.sin(d36), dy*Math.sin(d36), 0),
               Quat(0.5, 0.5, 0.5, 0.5)] ;
    },
-   'icosahedron':
+   icosahedron:
    function() {
       var dx = 1/6 + Math.sqrt(5)/6 ;
       var dy = 2/3 + Math.sqrt(5)/3 ;
@@ -273,12 +277,12 @@ PlatonicGenerator.prototype = {
       return [Quat(Math.cos(ang), dx*Math.sin(ang), dy*Math.sin(ang), 0),
               Quat(Math.cos(ang), -dx*Math.sin(ang), dy*Math.sin(ang), 0)] ;
    },
-   'octahedron':
+   octahedron:
    function() {
       var s5 = Math.sqrt(0.5) ;
       return [Quat(0.5, 0.5, 0.5, 0.5), Quat(s5, 0, 0, s5)] ;
    },
-   'closure': // compute the closure of a set of generators
+   closure: // compute the closure of a set of generators
    // This is quadratic in the result size.  Also, it has no protection
    // against you providing a bogus set of generators that would generate
    // an infinite group.
@@ -303,7 +307,7 @@ PlatonicGenerator.prototype = {
       }
       return q ;
    },
-   'uniqueplanes': // compute unique plane rotations
+   uniqueplanes: // compute unique plane rotations
    // given a rotation group and a plane, find the rotations that
    // generate unique planes.  This is quadratic in the return size.
    function(p, g) {
@@ -325,7 +329,7 @@ PlatonicGenerator.prototype = {
       }
       return planerot ;
    },
-   'getface': // compute a face given a set of planes
+   getface: // compute a face given a set of planes
    // The face returned will be a set of points that lie in the first plane
    // in the given array, that are on the surface of the polytope defined
    // by all the planes, and will be returned in clockwise order.
@@ -389,19 +393,25 @@ function PuzzleGeometry(shape, cuts) {
    return this ;
 }
 PuzzleGeometry.prototype = {
-   'rotations': null,   // all members of the rotation group
-   'baseplanerot': null, // unique rotations of the baseplane
-   'moveplanes': [],    // the planes that split moves
-   'moveplanesets': [], // the move planes, in parallel sets
-   'movesetorders': [], // the order of rotations for each move set
-   'faces': [],         // all the stickers
-   'stickersperface': 0, // number of stickers per face
-   'cubies': [],        // the cubies
-   'shortedge': 0,      // shortest edge
-   'vertexdistance': 0, // vertex distance
-   'edgedistance': 0,   // edge distance
-   'orbits': 0,         // count of cubie orbits
-   'create': // create the shape, doing all the essential geometry
+   rotations: null,   // all members of the rotation group
+   baseplanerot: null, // unique rotations of the baseplane
+   moveplanes: [],    // the planes that split moves
+   moveplanesets: [], // the move planes, in parallel sets
+   movesetorders: [], // the order of rotations for each move set
+   faces: [],         // all the stickers
+   stickersperface: 0, // number of stickers per face
+   cubies: [],        // the cubies
+   shortedge: 0,      // shortest edge
+   vertexdistance: 0, // vertex distance
+   edgedistance: 0,   // edge distance
+   orbits: 0,         // count of cubie orbits
+   facetocubies: [],  // map a face to a cubie index
+   moverotations: [], // move rotations
+   cubiekey: {},      // cubie locator
+   facelisthash: {},  // face list by key
+   movesbyslice: [],  // move as perms by slice
+   cmovesbyslice: [], // cmoves as perms by slice
+   create: // create the shape, doing all the essential geometry
    // create only goes far enough to figure out how many stickers per
    // face, and what the short edge is.  If the short edge is too short,
    // we probably don't want to display or manipulate this one.  How
@@ -487,7 +497,35 @@ PuzzleGeometry.prototype = {
       this.shortedge = shortedge ;
       console.log("Short edge is " + shortedge) ;
    },
-   'allstickers': // next step is to calculate all the stickers and orbits
+   keyface: // take a face and figure out the sides of each move plane
+   function(face) {
+      var s = '' ;
+      for (var i=0; i<this.moveplanesets.length; i++) {
+         var t = 0 ;
+         for (var j=0; j<this.moveplanesets[i].length; j++)
+            if (this.moveplanesets[i][j].faceside(face) > 0)
+               t++ ;
+         s = s + ' ' + t ;
+      }
+      return s ;
+   },
+   findcubie:
+   function (face) {
+      return this.cubiekey[this.keyface(face)];
+   },
+   findface:
+   function (face) {
+      var cm = Quat.prototype.centermassface(face) ;
+      var key = this.keyface(face) ;
+      for (var i=0; i<this.facelisthash[key].length; i++) {
+         var face2 = this.facelisthash[key][i] ;
+         if (Math.abs(cm.dist(
+                     Quat.prototype.centermassface(this.faces[face2]))) < eps)
+            return face2 ;
+      }
+      throw "Could not find face." ;
+   },
+   allstickers: // next step is to calculate all the stickers and orbits
    // We do enough work here to display the cube on the screen.
    function() {
       // take our newly split base face and expand it by the rotation matrix.
@@ -539,6 +577,7 @@ PuzzleGeometry.prototype = {
                break ;
             }
       }
+      this.moverotations = moverotations ;
       //  Sort the rotations by the angle of rotation.  A bit tricky because
       //  while the norms should be the same, they need not be.  So we start
       //  by making the norms the same, and then sorting.
@@ -565,20 +604,9 @@ PuzzleGeometry.prototype = {
       var cubiekeys = [] ;
       var cubies = [] ;
       var faces = this.faces ;
-      function keyface(face) {
-         var s = '' ;
-         for (var i=0; i<moveplanesets.length; i++) {
-            var t = 0 ;
-            for (var j=0; j<moveplanesets[i].length; j++)
-               if (moveplanesets[i][j].faceside(face) > 0)
-                  t++ ;
-            s = s + ' ' + t ;
-         }
-         return s ;
-      }
       for (var i=0; i<faces.length; i++) {
          var face = faces[i] ;
-         var s = keyface(face) ;
+         var s = this.keyface(face) ;
          if (!cubiehash[s]) {
             cubiekey[s] = cubies.length ;
             cubiekeys.push(s) ;
@@ -589,6 +617,8 @@ PuzzleGeometry.prototype = {
          facelisthash[s].push(i) ;
          cubiehash[s].push(face) ;
       }
+      this.cubiekey = cubiekey ;
+      this.facelisthash = facelisthash ;
       console.log("Cubies: " + Object.keys(cubiehash).length) ;
       //  Sort the cubies around each corner so they are clockwise.  Only
       //  relevant for cubies that actually are corners (three or more
@@ -598,7 +628,7 @@ PuzzleGeometry.prototype = {
          var cubie = cubies[k] ;
          if (cubie.length < 3)
             continue ;
-         var s = keyface(cubie[0]) ;
+         var s = this.keyface(cubie[0]) ;
          var facelist = facelisthash[s] ;
          var cm = cubie.map(
                        function(_){return Quat.prototype.centermassface(_)}) ;
@@ -629,16 +659,14 @@ PuzzleGeometry.prototype = {
       //  face number.
       var facetocubies = [] ;
       for (var i=0; i<faces.length; i++) {
-         var key = keyface(faces[i]) ;
+         var key = this.keyface(faces[i]) ;
          for (var j=0; j<facelisthash[key].length; j++)
             if (i==facelisthash[key][j]) {
                facetocubies.push([cubiehash[key], j]) ;
                break ;
             }
       }
-      function findface(face) {
-         return cubiekey[keyface(face)];
-      }
+      this.facetocubies = facetocubies ;
       //  Calculate the orbits of each cubie.
       var typenames = ['?', 'CENTER', 'EDGE', 'CORNER', 'C4RNER', 'C5RNER'] ;
       var cubiesetname = [] ;
@@ -670,7 +698,7 @@ PuzzleGeometry.prototype = {
             for (var j=0; j<moverotations.length; j++)
                for (var k=0; k<moverotations[j].length; k++) {
                   var tq = 
-                       findface(moverotations[j][k].rotateface(cubies[s][0])) ;
+                   this.findcubie(moverotations[j][k].rotateface(cubies[s][0])) ;
                   if (!seen[tq]) {
                      q.push(tq) ;
                      seen[tq] = true ;
@@ -681,14 +709,130 @@ PuzzleGeometry.prototype = {
       }
       this.orbits = cubieords.length ;
       // show the orbits
-      for (var i=0; i<cubieords.length; i++) {
-         console.log("Orbit " + i + " count " + cubieords[i]) ;
-      }
+      console.log("Cubie orbit sizes " + cubieords) ;
    },
-   'getfaces': // get the faces for 3d.
+   genperms: // generate permutations for moves
+   function() {
+      var mvcnt = 0 ;
+      var movesbyslice = [] ;
+      var cmovesbyslice = [] ;
+      for (var k=0; k<this.moveplanesets.length; k++) {
+         var moveplaneset = this.moveplanesets[k] ;
+         var slicenum = [] ;
+         var slicecnts = [] ;
+         for (var i=0; i<this.faces.length; i++) {
+            var face = this.faces[i] ;
+            var t = 0 ;
+            for (var j=0; j<moveplaneset.length; j++) {
+               if (moveplaneset[j].faceside(face) < 0)
+                  t++ ;
+            }
+            slicenum.push(t) ;
+            while (slicecnts.length <= t)
+               slicecnts.push(0) ;
+            slicecnts[t]++ ;
+         }
+         console.log("Slice counts are " + slicecnts) ;
+         var axismoves = [] ;
+         var axiscmoves = [] ;
+         for (var sc=0; sc<slicecnts.length; sc++) {
+            var mv = '' ;
+            var slicemoves = [] ;
+            var slicecmoves = [] ;
+            var cubiedone = [] ;
+            for (var i=0; i<this.faces.length; i++) {
+               if (slicenum[i] != sc)
+                  continue ;
+               var a = [i] ;
+               var b = this.facetocubies[i] ;
+               var cubie = b[0] ;
+               var ori = b[1] ;
+               b = [cubie, ori] ; // new array
+               var face = this.faces[i] ;
+               var fi2 = i ;
+               while (true) {
+                  slicenum[fi2] = -1 ;
+                  var face2 = this.moverotations[k][0].rotateface(face) ;
+                  fi2 = this.findface(face2) ;
+                  if (slicenum[fi2] < 0)
+                     break ;
+                  if (slicenum[fi2] != sc)
+                     throw "Bad movement?" ;
+                  a.push(fi2) ;
+                  var c = this.facetocubies[fi2] ;
+                  b.push(c[0]) ;
+                  b.push(c[1]) ;
+                  face = face2 ;
+               }
+ console.log("Perm is " + a) ;
+               if (a.length > 1)
+                  slicemoves.push(a) ;
+               if (b.length > 2 && !cubiedone[b[0]])
+                  slicecmoves.push(b) ;
+               for (var j=0; j<b.length; j += 2)
+                  cubiedone[b[j]]++ ;
+            }
+            axismoves.push(slicemoves) ;
+            axiscmoves.push(slicecmoves) ;
+         }
+         movesbyslice.push(axismoves) ;
+         cmovesbyslice.push(axiscmoves) ;
+      }
+      this.movesbyslice = movesbyslice ;
+      this.cmovesbyslice = cmovesbyslice ;
+   },
+   getfaces: // get the faces for 3d.
    function() {
       return this.faces.map(
               function(_){return _.map(function(_){return [_.b,_.c,_.d]})}) ;
+   },
+   getmovesets: // get the move sets we support based on slices
+   // For now, simplicity, we return all slices, STM, one per, so we
+   // include all rotations.  We can later reduce this based on
+   // orientation conventions and/or support multislice moves.
+   function(slices) {
+      if (slices > 30)
+         throw "Too many slices for getmovesets bitmasks" ;
+      var r = [] ;
+      for (var i=0; i<slices; i++)
+         r.push(1<<i) ;
+      return r ;
+   },
+   writegap: // write out a gap set of generators
+   function() {
+      var perms = [] ;
+      var movenum = 0 ;
+      for (var k=0; k<this.moveplanesets.length; k++) {
+         var moveplaneset = this.moveplanesets[k] ;
+         var slices = moveplaneset.length ;
+         var moveset = this.getmovesets(slices) ;
+         for (var i=0; i<moveset.length; i++) {
+            var order = -1 ;
+            var move = '' ;
+            var movebits = moveset[i] ;
+            var axismoves = this.movesbyslice[k] ;
+            for (var ii=0; ii<axismoves.length; ii++) {
+               if (((movebits >> ii) & 1) == 0)
+                  continue ;
+               var slicemoves = axismoves[ii] ;
+               for (var j=0; j<slicemoves.length; j++) {
+                  var mperm = slicemoves[j].map(function(_) { return _+1 }) ;
+                  order = mperm.length ;
+                  move = move + "(" + mperm.join(",") + ")" ;
+               }
+            }
+            var movename = 'M'+movenum ;
+            console.log(movename+':='+move) ;
+            perms.push(movename) ;
+            for (var j=2; j<order; j++) {
+               perms.push(movename + '^' + j) ;
+            }
+            movenum++ ;
+         }
+      }
+      console.log("Gen:=[") ;
+      console.log(perms.join(',')) ;
+      console.log("]") ;
    },
 } ;
 if (typeof(process) !== 'undefined' &&
@@ -698,7 +842,9 @@ if (typeof(process) !== 'undefined' &&
       cuts.push([process.argv[i], process.argv[i+1]]) ;
    var pg = new PuzzleGeometry(process.argv[2], cuts) ;
    pg.allstickers() ;
+   pg.genperms() ;
    console.log("Stickers " + pg.stickersperface + " cubies " +
                pg.cubies.length + " orbits " + pg.orbits +
                 " shortedge " + pg.shortedge) ;
+   pg.writegap() ;
 }
