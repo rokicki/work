@@ -125,13 +125,13 @@ $eps = 1e-9 ;
 #   What symmetry?
 #
 my $sym = shift ;
-if ($sym eq 'cube') {
+if ($sym eq 'cube' || $sym eq 'c') {
    cubical() ;
-} elsif ($sym eq 'tetrahedron') {
+} elsif ($sym eq 'tetrahedron' || $sym eq 't') {
    tetrahedral() ;
-} elsif ($sym eq 'dodecahedron') {
+} elsif ($sym eq 'dodecahedron' || $sym eq 'd') {
    dodecahedral() ;
-} elsif ($sym eq 'icosahedron') {
+} elsif ($sym eq 'icosahedron' || $sym eq 'i') {
    icosahedral() ;
 } else {
    die "Bad shape" ;
@@ -328,11 +328,11 @@ sub getplanefromcommandline {
    my $a = shift @ARGV ;
    my $b ;
    my $c ;
-   if ($a eq 'face') {
+   if ($a eq 'face' || $a eq 'f') {
       ($a, $b, $c) = @{$facenormal}[1,2,3] ;
-   } elsif ($a eq 'vertex') {
+   } elsif ($a eq 'vertex' || $a eq 'v') {
       ($a, $b, $c) = @{$vertexnormal}[1,2,3] ;
-   } elsif ($a eq 'edge') {
+   } elsif ($a eq 'edge' || $a eq 'e') {
       ($a, $b, $c) = @{$edgenormal}[1,2,3] ;
    } else {
       if (@ARGV < 3) {

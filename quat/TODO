@@ -1,3 +1,8 @@
+Issue:  my notion of a cubie is wrong; for the 3x3x3, core is six cubies
+with no orientation (because slices divide them up); for starminx,
+core is one cubie (!) with 60 orientations and we can't represent this
+group with ksolve rotations.  So we need to improve this.
+
 Generate flattened SVG net representation to integrate with Lucas
 
 Generate pcubes format for puzzles?
