@@ -834,6 +834,34 @@ PuzzleGeometry.prototype = {
       console.log(perms.join(',')) ;
       console.log("];") ;
    },
+   writess: // write a set of gens in perm format
+   function() {
+      console.log("// perms") ;
+      console.log(this.faces.length) ;
+      var totmoves = 0 ;
+      for (var k=0; k<this.moveplanesets.length; k++)
+         totmoves += this.moveplanesets[k].length ;
+      console.log(totmoves) ;
+      for (var k=0; k<this.moveplanesets.length; k++) {
+         var moveplaneset = this.moveplanesets[k] ;
+         var slices = moveplaneset.length ;
+         for (var i=0; i<=slices; i++) {
+            var perm = [] ;
+            for (var j=0; j<this.faces.length; j++)
+               perm[j] = j ;
+            var slicemoves = this.movesbyslice[k][i] ;
+            for (var j=0; j<slicemoves.length; j++) {
+               var mperm = slicemoves[j] ;
+               for (var ii=0; ii<mperm.length; ii++) {
+                  var jj = (ii + 1) % mperm.length ;
+                  perm[mperm[ii]] = mperm[jj] ;
+               }
+            }
+            perm = perm.map(function(_){return _+1}) ;
+            console.log(perm.join(" ")) ;
+         }
+      }
+   },
 } ;
 if (typeof(process) !== 'undefined' &&
     process.argv && process.argv.length >= 3) {
@@ -847,4 +875,5 @@ if (typeof(process) !== 'undefined' &&
                pg.cubies.length + " orbits " + pg.orbits +
                 " shortedge " + pg.shortedge) ;
    pg.writegap() ;
+   pg.writess() ;
 }
