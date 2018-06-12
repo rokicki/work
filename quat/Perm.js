@@ -64,56 +64,48 @@ var n = 0 ;
 var g = [] ;
 var e = Perm.prototype.e(n) ;
 var sgs = [] ;
+var sgsi = [] ;
 var Tk = [] ;
 function resolve(p) {
    for (var i=p.p.length-1; i>=0; i--) {
       var j = p.p[i] ;
       if (j != i) {
          if (!sgs[i][j])
-            return [false, p] ;
-         p = p.mul(sgs[i][j].inv()) ;
-         if (p.p[i] != i)
-            throw "Element did not resolve i" ;
+            return false ;
+         p = p.mul(sgsi[i][j]) ;
       }
    }
-   return [true, p] ;
-}
-function check(k, p) {
-   for (var i=k+1; i<p.p.length; i++)
-      if (p.p[i] != i)
-         throw "Bad call" ;
+   return true ;
 }
 function knutha(k, p) {
    Tk[k].push(p) ;
-   for (var i=0; i<sgs[k].length; i++) {
-      if (!sgs[k][i])
-         continue ;
-      knuthb(k, sgs[k][i].mul(p)) ;
-   }
+   for (var i=0; i<sgs[k].length; i++)
+      if (sgs[k][i])
+         knuthb(k, sgs[k][i].mul(p)) ;
 }
 function knuthb(k, p) {
    var j = p.p[k] ;
    if (!sgs[k][j]) {
       sgs[k][j] = p ;
+      sgsi[k][j] = p.inv() ;
       for (var i=0; i<Tk[k].length; i++)
          knuthb(k, p.mul(Tk[k][i])) ;
       return ;
    }
-   var p2 = p.mul(sgs[k][j].inv()) ;
-   if (p2.p[k] != k)
-      throw "Bad fix? at " + k + " " + p2 + " from " + p ;
-   var r = resolve(p2) ;
-   if (r[0])
-      return ;
-   knutha(k-1, p2) ;
+   var p2 = p.mul(sgsi[k][j]) ;
+   if (!resolve(p2))
+      knutha(k-1, p2) ;
 }
 function getsgs() {
    sgs = [] ;
+   sgsi = [] ;
    Tk = [] ;
    for (var i=0; i<n; i++) {
       sgs.push([]) ;
+      sgsi.push([]) ;
       Tk.push([]) ;
       sgs[i][i] = e ;
+      sgsi[i][i] = e ;
    }
    for (var i=0; i<g.length; i++) {
       knutha(n-1, g[i]) ;
@@ -130,9 +122,8 @@ function getsgs() {
       console.log("After adding " + i + " sz is " + sz + " T " + tks) ;
    }
 }
-n = 100 ;
+n = 200 ;
 g = [Perm([1,3,2,4,6,5,7,0]), Perm([0,2,3,1,4,5,7,6])] ;
 g = [Perm.prototype.random(n), Perm.prototype.random(n)] ;
 e = Perm.prototype.e(n) ;
-// console.log(g) ;
 getsgs() ;
