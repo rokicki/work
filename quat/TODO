@@ -2,6 +2,9 @@ Letter faces (easy); then letter edges and vertices based on this and
 use this as a basis for move names.  Clockwise order around corners
 let us enforce appropriate mapping for layout.
 
+Octahedron vertices have four-char names; icosahedron vertices have
+five-char names.  That's less concise than I would prefer.
+
 Issue:  my notion of a cubie is wrong; for the 3x3x3, core is six cubies
 with no orientation (because slices divide them up); for starminx,
 core is one cubie (!) with 60 orientations and we can't represent this
