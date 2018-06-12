@@ -395,6 +395,9 @@ function PuzzleGeometry(shape, cuts) {
 PuzzleGeometry.prototype = {
    rotations: null,   // all members of the rotation group
    baseplanerot: null, // unique rotations of the baseplane
+   facenames: null,   // face names
+   edgenames: null,   // edge names
+   vertexnames: null, // vertexnames
    moveplanes: [],    // the planes that split moves
    moveplanesets: [], // the move planes, in parallel sets
    movesetorders: [], // the order of rotations for each move set
@@ -458,6 +461,102 @@ PuzzleGeometry.prototype = {
       var planerot = pg.uniqueplanes(boundary, this.rotations) ;
       var planes = planerot.map(function(_){return boundary.rotateplane(_)}) ;
       var faces = [pg.getface(planes)] ;
+//   Determine names for edges, vertices, and planes.  Planes are defined
+//   by the plane normal/distance; edges are defined by the midpoint;
+//   vertices are defined by actual point.  In each case we define a name.
+//   Note that edges have two potential names, and corners have n where
+//   n planes meet at a vertex.  We arbitrarily choose the one that is
+//   alphabetically first (and we will probably want to change this).
+      var facenames = [] ;
+      var vertexnames = [] ;
+      var edgenames = [] ;
+      function searchaddelement(a, p, name) {
+         for (var i=0; i<a.length; i++)
+            if (a[i][0].dist(p) < eps) {
+               a[i].push(name) ;
+               return ;
+            }
+         a.push([p, name]) ;
+      }
+      function findelement(a, p) {
+         for (var i=0; i<a.length; i++)
+            if (a[i][0].dist(p) < eps)
+               return i ;
+         throw "Element not found" ;
+      }
+      function showthe(what, a) {
+         var allnames = a.map(function(_){
+            var r = '' ;
+            for (i=1; i<_.length; i++)
+               r += _[i] ;
+            return r ;
+         }) ;
+         console.log(what + ": " + allnames) ;
+      }
+      for (var i=0; i<this.baseplanerot.length; i++) {
+         var face = this.baseplanerot[i].rotateface(faces[0]) ;
+         var facename = String.fromCharCode(65+i) ;
+         facenames.push([face, facename]) ;
+      }
+      for (var i=0; i<this.baseplanerot.length; i++) {
+         var face = this.baseplanerot[i].rotateface(faces[0]) ;
+         var facename = String.fromCharCode(65+i) ;
+         for (var j=0; j<face.length; j++) {
+            var jj = (j + 1) % face.length ;
+            var midpoint = face[j].sum(face[jj]).smul(0.5) ;
+            searchaddelement(edgenames, midpoint, facename) ;
+         }
+      }
+      for (var i=0; i<this.baseplanerot.length; i++) {
+         var face = this.baseplanerot[i].rotateface(faces[0]) ;
+         var facename = String.fromCharCode(65+i) ;
+         for (var j=0; j<face.length; j++) {
+            var jj = (j + 1) % face.length ;
+            var midpoint = face[j].sum(face[jj]).smul(0.5) ;
+            var jjj = (j + 2) % face.length ;
+            var midpoint2 = face[jj].sum(face[jjj]).smul(0.5) ;
+            var e1 = findelement(edgenames, midpoint) ;
+            var e2 = findelement(edgenames, midpoint2) ;
+            searchaddelement(vertexnames, face[jj], [facename, e2, e1]) ;
+         }
+      }
+      // fix the edge names; use alphabetical order
+      for (var i=0; i<edgenames.length; i++) {
+         if (edgenames[i].length != 3)
+            throw "Bad length in edge names" ;
+         var c1 = edgenames[i][1] ;
+         var c2 = edgenames[i][2] ;
+         if (c1 < c2)
+            c1 = c1 + c2 ;
+         else
+            c1 = c2 + c1 ;
+         edgenames[i] = [edgenames[i][0], c1] ;
+      }
+      // fix the vertex names; clockwise rotations; low face first.
+      for (var i=0; i<vertexnames.length; i++) {
+         if (vertexnames[i].length < 4)
+            throw "Bad length in vertex names" ;
+         var st = 1 ;
+         for (var j=2; j<vertexnames[i].length; j++)
+            if (vertexnames[i][j][0] < vertexnames[i][st][0])
+               st = j ;
+         var r = '' ;
+         for (var j=1; j<vertexnames[i].length; j++) {
+            r = r + vertexnames[i][st][0] ;
+            for (var k=1; k<vertexnames[i].length; k++)
+               if (vertexnames[i][st][2] == vertexnames[i][k][1]) {
+                  st = k ;
+                  break ;
+               }
+         }
+         vertexnames[i] = [vertexnames[i][0], r] ;
+      }
+      this.facenames = facenames ;
+      this.edgenames = edgenames ;
+      this.vertexnames = vertexnames ;
+      showthe('Faces', facenames) ;
+      showthe('Edges', edgenames) ;
+      showthe('Vertices', vertexnames) ;
       var zero = Quat(0, 0, 0, 0) ;
       this.edgedistance = faces[0][0].sum(faces[0][1]).smul(0.5).dist(zero) ;
       this.vertexdistance = faces[0][0].dist(zero) ;
@@ -764,7 +863,6 @@ PuzzleGeometry.prototype = {
                   b.push(c[1]) ;
                   face = face2 ;
                }
- console.log("Perm is " + a) ;
                if (a.length > 1)
                   slicemoves.push(a) ;
                if (b.length > 2 && !cubiedone[b[0]])
