@@ -38,6 +38,10 @@ Quat.prototype = {
    function(q) {
       return Math.hypot(this.a-q.a, this.b-q.b, this.c-q.c, this.d-q.d) ;
    },
+   len: // Euclidean distance from origin
+   function(q) {
+      return Math.hypot(this.a, this.b, this.c, this.d) ;
+   },
    cross: // Cross product of two quaternions
    function(q) {
       return Quat(0, this.c*q.d-this.d*q.c,
@@ -395,6 +399,7 @@ function PuzzleGeometry(shape, cuts) {
 PuzzleGeometry.prototype = {
    rotations: null,   // all members of the rotation group
    baseplanerot: null, // unique rotations of the baseplane
+   baseplanes: null,  // planes, corresponding to faces
    facenames: null,   // face names
    edgenames: null,   // edge names
    vertexnames: null, // vertexnames
@@ -440,6 +445,7 @@ PuzzleGeometry.prototype = {
       this.baseplanerot = pg.uniqueplanes(baseplane, this.rotations) ;
       var baseplanes = this.baseplanerot.map(
                        function(_){ return baseplane.rotateplane(_) }) ;
+      this.baseplanes = baseplanes ;
       console.log("We see " + baseplanes.length + " base planes.") ;
       var baseface = pg.getface(baseplanes) ;
       console.log("Basic face has " + baseface.length + " vertices.") ;
@@ -458,15 +464,18 @@ PuzzleGeometry.prototype = {
          cutplanes.push(normal.makecut(cuts[i][1])) ;
       }
       var boundary = Quat(1, facenormal.b, facenormal.c, facenormal.d) ;
+      console.log("Boundary is " + boundary) ;
       var planerot = pg.uniqueplanes(boundary, this.rotations) ;
       var planes = planerot.map(function(_){return boundary.rotateplane(_)}) ;
       var faces = [pg.getface(planes)] ;
+//
 //   Determine names for edges, vertices, and planes.  Planes are defined
 //   by the plane normal/distance; edges are defined by the midpoint;
 //   vertices are defined by actual point.  In each case we define a name.
 //   Note that edges have two potential names, and corners have n where
 //   n planes meet at a vertex.  We arbitrarily choose the one that is
 //   alphabetically first (and we will probably want to change this).
+//
       var facenames = [] ;
       var vertexnames = [] ;
       var edgenames = [] ;
@@ -523,7 +532,7 @@ PuzzleGeometry.prototype = {
       // fix the edge names; use alphabetical order
       for (var i=0; i<edgenames.length; i++) {
          if (edgenames[i].length != 3)
-            throw "Bad length in edge names" ;
+            throw "Bad length in edge names " + edgenames[i] ;
          var c1 = edgenames[i][1] ;
          var c2 = edgenames[i][2] ;
          if (c1 < c2)
@@ -623,6 +632,29 @@ PuzzleGeometry.prototype = {
             return face2 ;
       }
       throw "Could not find face." ;
+   },
+   project2d: // calculate geometry to map a particular edge of a particular
+   //  face to a given 2D vector.  The face is given as an index into the
+   //  facenames/baseplane arrays, and the edge is given as an offset into
+   //  the vertices.
+   function(facen, edgen, targvec) {
+      var face = this.facenames[facen][0] ;
+      var edgen2 = (edgen + 1) % face.length ;
+      var plane = this.baseplanes[facen] ;
+      var x0 = face[edgen2].sub(face[edgen]) ;
+      var olen = x0.len() ;
+      x0 = x0.normalize() ;
+      var y0 = x0.cross(plane).normalize() ;
+      var delta = targvec[1].sub(targvec[0]) ;
+      var len = delta.len() / olen ;
+      delta = delta.normalize() ;
+      var cosr = delta.b ;
+      var sinr = delta.c ;
+      var x1 = x0.smul(cosr).sub(y0.smul(sinr)).smul(len) ;
+      var y1 = y0.smul(cosr).sum(x0.smul(sinr)).smul(len) ;
+      var off = Quat(0, targvec[0].b - x1.dot(face[edgen]),
+                        targvec[0].c - y1.dot(face[edgen]), 0) ;
+      return [x1, y1, off] ;
    },
    allstickers: // next step is to calculate all the stickers and orbits
    // We do enough work here to display the cube on the screen.
@@ -884,6 +916,15 @@ PuzzleGeometry.prototype = {
       return this.faces.map(
               function(_){return _.map(function(_){return [_.b,_.c,_.d]})}) ;
    },
+   getboundarygeometry: // get the boundary geometry
+   function() {
+      return {
+         baseplanes: this.baseplanes,
+         facenames: this.facenames,
+         vertexnames: this.vertexnames,
+         edgenames: this.edgenames,
+      } ;
+   },
    getmovesets: // get the move sets we support based on slices
    // For now, simplicity, we return all slices, STM, one per, so we
    // include all rotations.  We can later reduce this based on
@@ -972,6 +1013,6 @@ if (typeof(process) !== 'undefined' &&
    console.log("Stickers " + pg.stickersperface + " cubies " +
                pg.cubies.length + " orbits " + pg.orbits +
                 " shortedge " + pg.shortedge) ;
-   pg.writegap() ;
-   pg.writess() ;
+// pg.writegap() ;
+// pg.writess() ;
 }

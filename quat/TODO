@@ -1,3 +1,7 @@
+Improve epsilon management; ensure we don't loop forever if something
+goes wrong with epsilon calculations; add too-small-face warning or
+something of that nature.
+
 Letter faces (easy); then letter edges and vertices based on this and
 use this as a basis for move names.  Clockwise order around corners
 let us enforce appropriate mapping for layout.
