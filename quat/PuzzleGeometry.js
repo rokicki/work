@@ -419,6 +419,13 @@ PuzzleGeometry.prototype = {
    facelisthash: {},  // face list by key
    movesbyslice: [],  // move as perms by slice
    cmovesbyslice: [], // cmoves as perms by slice
+   findelement: // find something in facenames, vertexnames, edgenames
+   function findelement(a, p) {
+      for (var i=0; i<a.length; i++)
+         if (a[i][0].dist(p) < eps)
+            return i ;
+      throw "Element not found" ;
+   },
    create: // create the shape, doing all the essential geometry
    // create only goes far enough to figure out how many stickers per
    // face, and what the short edge is.  If the short edge is too short,
@@ -487,12 +494,6 @@ PuzzleGeometry.prototype = {
             }
          a.push([p, name]) ;
       }
-      function findelement(a, p) {
-         for (var i=0; i<a.length; i++)
-            if (a[i][0].dist(p) < eps)
-               return i ;
-         throw "Element not found" ;
-      }
       function showthe(what, a) {
          var allnames = a.map(function(_){
             var r = '' ;
@@ -524,8 +525,8 @@ PuzzleGeometry.prototype = {
             var midpoint = face[j].sum(face[jj]).smul(0.5) ;
             var jjj = (j + 2) % face.length ;
             var midpoint2 = face[jj].sum(face[jjj]).smul(0.5) ;
-            var e1 = findelement(edgenames, midpoint) ;
-            var e2 = findelement(edgenames, midpoint2) ;
+            var e1 = this.findelement(edgenames, midpoint) ;
+            var e2 = this.findelement(edgenames, midpoint2) ;
             searchaddelement(vertexnames, face[jj], [facename, e2, e1]) ;
          }
       }
