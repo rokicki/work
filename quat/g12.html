@@ -170,6 +170,7 @@ function walknet(pg, fn, context, w, h) {
          maxy = Math.max(maxy, es[i][1]) ;
       }
    }
+ console.log("X bounds " + minx + ".." + maxx + " y bounds " + miny + ".." + maxy) ;
    var sc = Math.min(w/(maxx-minx), h/(maxy-miny)) ;
    var xoff = 0.5*(w-sc*(maxx+minx)) ;
    var yoff = 0.5*(h-sc*(maxy+miny)) ;
@@ -187,6 +188,8 @@ function walknet(pg, fn, context, w, h) {
    geos[bg.facenames[0][1]] = pg.project2d(0, 0,
                  [Quat(0, initv[0][0], initv[0][1], 0),
                   Quat(0, initv[1][0], initv[1][1], 0)]) ;
+   var connectat = [] ;
+   connectat[0] = 0 ;
    for (var i=0; i<net.length; i++) {
       var f0 = net[i][0] ;
       if (!edges2[f0]) {
@@ -212,9 +215,12 @@ function walknet(pg, fn, context, w, h) {
          edges2[f1] = [edges2[f0][j%polyn], edges2[f0][(j+polyn-1)%polyn]] ;
          extendedges(edges2[f1], polyn) ;
          // what edge are we at?
-         var mp = thisface[j%polyn].sum(thisface[(j+polyn-1)%polyn]).smul(0.5) ;
+         var caf0 = connectat[gfi] ;
+ console.log("Caf " + gfi + " is " + caf0) ;
+         var mp = thisface[(caf0+j)%polyn].sum(thisface[(caf0+j+polyn-1)%polyn]).smul(0.5) ;
          var epi = pg.findelement(bg.edgenames, mp) ;
          var edgename = bg.edgenames[epi][1] ;
+ console.log("Match on edgename " + edgename) ;
          var gf1 = edgename[(gf0 == edgename[0]) ? 1 : 0] ;
          var gf1i = -1 ;
          for (var k=0; k<bg.facenames.length; k++) {
@@ -235,9 +241,10 @@ function walknet(pg, fn, context, w, h) {
             if (mp2.dist(mp) <= eps) {
                var p1 = edges2[f0][(j+polyn-1)%polyn] ;
                var p2 = edges2[f0][j % polyn] ;
- console.log("Writing goes for " + gf1 + " from " + gf0) ;
+ console.log("Writing goes for " + gf1 + " from " + gf0 + " to " + gf1i) ;
+               connectat[gf1i] = k ;
                geos[gf1] = pg.project2d(gf1i, k,
-                       [Quat(0, p1[0], p1[1], 0), Quat(0, p2[0], p2[1], 0)]) ;
+                       [Quat(0, p2[0], p2[1], 0), Quat(0, p1[0], p1[1], 0)]) ;
                break ;
             }
          }
@@ -246,8 +253,6 @@ function walknet(pg, fn, context, w, h) {
    for (var i=0; i<pg.faces.length; i++) {
       var face = pg.faces[i] ;
       var g = geos[pg.facenames[Math.floor(i/pg.stickersperface)][1]] ;
- console.log("Face name is " + pg.facenames[Math.floor(i/pg.stickersperface)][1]) ;
- console.log("For i " + i + " spf " + pg.stickersperface + " G is " + g) ;
       var face2 = face.map(function(p){
                        return [p.dot(g[0])+g[2].b, p.dot(g[1])+g[2].c] ; }) ;
       drawedges(context, face2) ;
