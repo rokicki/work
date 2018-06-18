@@ -106,6 +106,21 @@ var nets = {
    ["P", "O", "Q", ""],
 ],
 } ;
+// the colors should use the same naming convention as the nets, above.
+var colors = {
+4: { F: '#ffffff', D: '#ff0000', L: '#00ff00', R: '#0000ff', },
+6: { U: '#ffffff', F: '#00ff00', R: '#ff0000',
+     D: '#ffff00', B: '#0000ff', L: '#ff8000', },
+8: { U: '#e085b9', F: '#080d99', R: '#c1e35c', D: '#22955e',
+     B: '#9121ab', L: '#b27814', M: '#0d35ad', N: '#eb126b', },
+12: { U: '#b62d67', F: '#769500', R: '#88132b', C: '#d9af2f',
+      A: '#fc74d7', L: '#d7b6f1', E: '#ee53b9', B: '#75f491',
+      G: '#ab5947', H: '#ce5a57', I: '#f09e4f', D: '#0d24c0', },
+20: { R: '#db69f0', C: '#178fde', F: '#23238b', E: '#9cc726',
+      L: '#2c212d', U: '#177fa7', A: '#e0de7f', G: '#2b57c0',
+      I: '#41126b', S: '#4b8c28', H: '#7c098d', J: '#7fe7b4',
+      B: '#85fb74', K: '#3f4bc3', D: '#0ff555', M: '#f1c2c8',
+      O: '#58d340', P: '#c514f2', N: '#14494e', Q: '#8b1be1', }} ;
 // given a single edge describing a regular polygon with polyn sides,
 // extend it around.
 function extendedges(a, polyn) {
@@ -121,12 +136,16 @@ function extendedges(a, polyn) {
       a.push([a[i-1][0]+dx, a[i-1][1]+dy]) ;
    }
 }
-function drawedges(context, pts) {
+function drawedges(context, pts, color) {
    context.beginPath() ;
    context.moveTo(pts[0][0], pts[0][1]) ;
    for (var i=1; i<pts.length; i++)
       context.lineTo(pts[i][0], pts[i][1]) ;
    context.closePath() ;
+   context.save() ;
+   context.fillStyle = color ;
+   context.fill() ;
+   context.restore() ;
    context.stroke() ;
 }
 // Find a net from a given face count.  Walk it, assuming we locate
@@ -252,10 +271,12 @@ function walknet(pg, fn, context, w, h) {
    }
    for (var i=0; i<pg.faces.length; i++) {
       var face = pg.faces[i] ;
-      var g = geos[pg.facenames[Math.floor(i/pg.stickersperface)][1]] ;
+      var facenum = Math.floor(i/pg.stickersperface) ;
+      var netname = geonet[pg.facenames[facenum][1]] ;
+      var g = geos[pg.facenames[facenum][1]] ;
       var face2 = face.map(function(p){
                        return [p.dot(g[0])+g[2].b, p.dot(g[1])+g[2].c] ; }) ;
-      drawedges(context, face2) ;
+      drawedges(context, face2, colors[fn][netname]) ;
    }
    return geos ;
 }
