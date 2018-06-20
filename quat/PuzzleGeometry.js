@@ -1060,6 +1060,13 @@ Perm.prototype = {
          c[i] = p2.p[this.p[i]] ;
       return Perm(c) ;
    },
+   rmul: // multiply the other way
+   function(p2) {
+      var c = Array(this.n) ;
+      for (var i=0; i<this.n; i++)
+         c[i] = this.p[p2.p[i]] ;
+      return Perm(c) ;
+   },
    inv: // inverse
    function() {
       var c = Array(this.n) ;

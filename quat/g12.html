@@ -291,7 +291,7 @@ function walknet(pg, fn, context, w, h) {
    var moveperms = pg.getmoveperms() ;
    for (var i=0; i<100; i++) {
       var rm = Math.floor(Math.random()*moveperms.length) ;
-      pos = Perm(moveperms[rm]).mul(pos) ;
+      pos = pos.rmul(Perm(moveperms[rm])) ;
    }
    // Here's our final rendering call.
    for (var i=0; i<pg.faces.length; i++)
