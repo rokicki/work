@@ -275,7 +275,7 @@ function walknet(pg, fn, context, w, h) {
       var netname = geonet[pg.facenames[facenum][1]] ;
       var g = geos[pg.facenames[facenum][1]] ;
       var face2 = face.map(function(p){
-                       return [p.dot(g[0])+g[2].b, p.dot(g[1])+g[2].c] ; }) ;
+                       return [p.dot(g[0])+g[2].b, -p.dot(g[1])-g[2].c] ; }) ;
       drawedges(context, face2, colors[fn][netname]) ;
    }
    return geos ;
@@ -293,7 +293,7 @@ function display() {
    context.clearRect(0, 0, canvas.width, canvas.height) ;
    var canwidth = canvas.width - 2 * trim ;
    var canheight = canvas.height - 2 * trim ;
-   context.translate(trim, trim) ;
+   context.translate(trim, trim+canheight) ;
    walknet(pg, boundarygeo.facenames.length,
            context, canwidth, canheight) ;
 /*
