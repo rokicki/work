@@ -190,7 +190,6 @@ function walknet(pg, fn, context, w, h) {
          maxy = Math.max(maxy, es[i][1]) ;
       }
    }
- console.log("X bounds " + minx + ".." + maxx + " y bounds " + miny + ".." + maxy) ;
    var sc = Math.min(w/(maxx-minx), h/(maxy-miny)) ;
    var xoff = 0.5*(w-sc*(maxx+minx)) ;
    var yoff = 0.5*(h-sc*(maxy+miny)) ;
@@ -204,7 +203,6 @@ function walknet(pg, fn, context, w, h) {
    extendedges(edges2[net[0][0]], polyn) ;
    netgeo[net[0][0]] = bg.facenames[0][1] ;
    geonet[bg.facenames[0][1]] = net[0][0] ;
- console.log("Writing goes for " + bg.facenames[0][1]) ;
    geos[bg.facenames[0][1]] = pg.project2d(0, 0,
                  [Quat(0, initv[0][0], initv[0][1], 0),
                   Quat(0, initv[1][0], initv[1][1], 0)]) ;
@@ -236,11 +234,9 @@ function walknet(pg, fn, context, w, h) {
          extendedges(edges2[f1], polyn) ;
          // what edge are we at?
          var caf0 = connectat[gfi] ;
- console.log("Caf " + gfi + " is " + caf0) ;
          var mp = thisface[(caf0+j)%polyn].sum(thisface[(caf0+j+polyn-1)%polyn]).smul(0.5) ;
          var epi = pg.findelement(bg.edgenames, mp) ;
          var edgename = bg.edgenames[epi][1] ;
- console.log("Match on edgename " + edgename) ;
          var gf1 = edgename[(gf0 == edgename[0]) ? 1 : 0] ;
          var gf1i = -1 ;
          for (var k=0; k<bg.facenames.length; k++) {
@@ -261,7 +257,6 @@ function walknet(pg, fn, context, w, h) {
             if (mp2.dist(mp) <= eps) {
                var p1 = edges2[f0][(j+polyn-1)%polyn] ;
                var p2 = edges2[f0][j % polyn] ;
- console.log("Writing goes for " + gf1 + " from " + gf0 + " to " + gf1i) ;
                connectat[gf1i] = k ;
                geos[gf1] = pg.project2d(gf1i, k,
                        [Quat(0, p2[0], p2[1], 0), Quat(0, p1[0], p1[1], 0)]) ;
@@ -289,9 +284,11 @@ function walknet(pg, fn, context, w, h) {
    }
    // Let's pretend we make a base move.
    var moveperms = pg.getmoveperms() ;
-   for (var i=0; i<100; i++) {
-      var rm = Math.floor(Math.random()*moveperms.length) ;
-      pos = pos.rmul(Perm(moveperms[rm])) ;
+   if (moveperms.length) {
+      for (var i=0; i<1; i++) {
+         var rm = Math.floor(Math.random()*moveperms.length) ;
+         pos = pos.rmul(Perm(moveperms[rm])) ;
+      }
    }
    // Here's our final rendering call.
    for (var i=0; i<pg.faces.length; i++)
@@ -312,21 +309,12 @@ function display() {
    var canwidth = canvas.width - 2 * trim ;
    var canheight = canvas.height - 2 * trim ;
    context.translate(trim, trim+canheight) ;
-   walknet(pg, boundarygeo.facenames.length,
-           context, canwidth, canheight) ;
-/*
-   var geo = pg.project2d(0, 0,
-                [Quat(0, canwidth/2-0.5*sc, -canheight/2+0.5*sc*whmul[1], 0),
-                 Quat(0, canwidth/2+0.5*sc, -canheight/2+0.5*sc*whmul[1], 0)]) ;
-   var faces = pg.faces ;
-   var justone = faces.length / boundarygeo.facenames.length ;
-   for (var j=0; j<justone; j++) {
-      var face = faces[j] ;
-      var pts = face.map(function(q) {
-                    return [q.dot(geo[0])+geo[2].b, q.dot(geo[1])+geo[2].c]}) ;
+   try {
+      walknet(pg, boundarygeo.facenames.length,
+              context, canwidth, canheight) ;
+   } finally {
+      context.restore() ;
    }
- */
-   context.restore() ;
 }
 function setup() {
    textinput = document.getElementById('desc') ;
