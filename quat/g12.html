@@ -38,6 +38,7 @@ function checkchange() {
          "Edge distance " + pg.edgedistance + "<BR>" +
          "Vertex distance " + pg.vertexdistance + "<BR>" ;
       document.getElementById('data').innerHTML = desc ;
+      pg.genperms() ;
       display() ;
    }
 }
@@ -269,15 +270,32 @@ function walknet(pg, fn, context, w, h) {
          }
       }
    }
+   // Let's build arrays for faster rendering.  We want to map from geo
+   // base face number to color, and we want to map from geo face number
+   // to 2D geometry.  These can be reused as long as the puzzle overall
+   // orientation and canvas size remains unchanged.
+   var pos = pg.getsolved() ;
+   var colormap = [] ;
+   var facegeo = [] ;
+   for (var i=0; i<pg.basefacecount; i++)
+      colormap[i] = colors[fn][geonet[pg.facenames[i][1]]] ;
    for (var i=0; i<pg.faces.length; i++) {
       var face = pg.faces[i] ;
       var facenum = Math.floor(i/pg.stickersperface) ;
-      var netname = geonet[pg.facenames[facenum][1]] ;
       var g = geos[pg.facenames[facenum][1]] ;
       var face2 = face.map(function(p){
                        return [p.dot(g[0])+g[2].b, -p.dot(g[1])-g[2].c] ; }) ;
-      drawedges(context, face2, colors[fn][netname]) ;
+      facegeo.push(face2) ;
    }
+   // Let's pretend we make a base move.
+   var moveperms = pg.getmoveperms() ;
+   for (var i=0; i<100; i++) {
+      var rm = Math.floor(Math.random()*moveperms.length) ;
+      pos = Perm(moveperms[rm]).mul(pos) ;
+   }
+   // Here's our final rendering call.
+   for (var i=0; i<pg.faces.length; i++)
+      drawedges(context, facegeo[i], colormap[pos.p[i]]) ;
    return geos ;
 }
 function display() {

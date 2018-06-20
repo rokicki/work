@@ -407,7 +407,8 @@ PuzzleGeometry.prototype = {
    moveplanesets: [], // the move planes, in parallel sets
    movesetorders: [], // the order of rotations for each move set
    faces: [],         // all the stickers
-   stickersperface: 0, // number of stickers per face
+   basefacecount: 0,  // number of base faces
+   stickersperface: 0,// number of stickers per face
    cubies: [],        // the cubies
    shortedge: 0,      // shortest edge
    vertexdistance: 0, // vertex distance
@@ -453,6 +454,7 @@ PuzzleGeometry.prototype = {
       var baseplanes = this.baseplanerot.map(
                        function(_){ return baseplane.rotateplane(_) }) ;
       this.baseplanes = baseplanes ;
+      this.basefacecount = baseplanes.length ;
       console.log("We see " + baseplanes.length + " base planes.") ;
       var baseface = pg.getface(baseplanes) ;
       console.log("Basic face has " + baseface.length + " vertices.") ;
@@ -1002,7 +1004,97 @@ PuzzleGeometry.prototype = {
          }
       }
    },
+   getmoveperms: // get basic move perms in an array, along with orders.
+   function() {
+      var r = [] ;
+      for (var k=0; k<this.moveplanesets.length; k++) {
+         var moveplaneset = this.moveplanesets[k] ;
+         var slices = moveplaneset.length ;
+         for (var i=0; i<=slices; i++) {
+            var perm = [] ;
+            for (var j=0; j<this.faces.length; j++)
+               perm[j] = j ;
+            var slicemoves = this.movesbyslice[k][i] ;
+            for (var j=0; j<slicemoves.length; j++) {
+               var mperm = slicemoves[j] ;
+               for (var ii=0; ii<mperm.length; ii++) {
+                  var jj = (ii + 1) % mperm.length ;
+                  perm[mperm[ii]] = mperm[jj] ;
+               }
+            }
+            r.push(perm) ;
+         }
+      }
+      return r ;
+   },
+   getsolved: // get a solved position
+   function() {
+      var r = [] ;
+      for (var i=0; i<this.basefacecount; i++) {
+         for (var j=0; j<this.stickersperface; j++) {
+            r.push(i) ;
+         }
+      }
+      return Perm(r) ;
+   },
 } ;
+function Perm(p_) {
+   if (this instanceof Perm) {
+      this.p = p_ ;
+      this.n = p_.length ;
+   } else {
+      return new Perm(p_) ;
+   }
+}
+Perm.prototype = {
+   p:[], // The permutation itself
+   n:0,  // length
+   toString: // stringify
+   function() {
+      return 'Perm[' + this.p.join(' ') + ']' ;
+   },
+   mul: // multiply
+   function(p2) {
+      var c = Array(this.n) ;
+      for (var i=0; i<this.n; i++)
+         c[i] = p2.p[this.p[i]] ;
+      return Perm(c) ;
+   },
+   inv: // inverse
+   function() {
+      var c = Array(this.n) ;
+      for (var i=0; i<this.n; i++)
+         c[this.p[i]] = i ;
+      return Perm(c) ;
+   },
+   e: // identity
+   function(n) {
+      var c = Array(n) ;
+      for (var i=0; i<n; i++)
+         c[i] = i ;
+      return Perm(c) ;
+   },
+   random: // random
+   function(n) {
+      var c = Array(n) ;
+      for (var i=0; i<n; i++)
+         c[i] = i ;
+      for (var i=0; i<n; i++) {
+         var j = i + Math.floor((n-i)*Math.random()) ;
+         var t = c[i] ;
+         c[i] = c[j] ;
+         c[j] = t ;
+      }
+      return Perm(c) ;
+   },
+   compareTo: // comparison
+   function(p2) {
+      for (var i=0; i<this.n; i++)
+         if (this.p[i] != p2.p[i])
+            return this.p[i]-p2.p[i] ;
+      return 0 ;
+   },
+}
 if (typeof(process) !== 'undefined' &&
     process.argv && process.argv.length >= 3) {
    var cuts = [] ;
