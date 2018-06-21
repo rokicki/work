@@ -1045,10 +1045,10 @@ PuzzleGeometry.prototype = {
                var mperm = slicemoves[j] ;
                for (var ii=0; ii<mperm.length; ii++) {
                   var jj = (ii + 1) % mperm.length ;
-                  perm[mperm[ii]] = mperm[jj] ;
+                  perm[mperm[jj]] = mperm[ii] ;
                }
             }
-            r.push(perm) ;
+            r.push([perm, i, this.movesetgeos[k]]) ;
          }
       }
       return r ;

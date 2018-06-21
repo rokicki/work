@@ -287,7 +287,8 @@ function walknet(pg, fn, context, w, h) {
    if (moveperms.length) {
       for (var i=0; i<1; i++) {
          var rm = Math.floor(Math.random()*moveperms.length) ;
-         pos = pos.rmul(Perm(moveperms[rm])) ;
+         console.log("Move perm is slice " + moveperms[rm][1] + " of move from face " + geonet[moveperms[rm][2][0]] + " to face " + geonet[moveperms[rm][2][2]]) ;
+         pos = pos.rmul(Perm(moveperms[rm][0])) ;
       }
    }
    // Here's our final rendering call.
