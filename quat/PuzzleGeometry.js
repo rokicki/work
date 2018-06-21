@@ -56,7 +56,7 @@ Quat.prototype = {
       var d = Math.sqrt(this.dot(this)) ;
       return Quat(this.a/d, this.b/d, this.c/d, this.d/d) ;
    },
-   makenormal: // make a normal vector from a plane or quat
+   makenormal: // make a normal vector from a plane or quat or point
    function() {
       return Quat(0, this.b, this.c, this.d).normalize() ;
    },
@@ -401,11 +401,15 @@ PuzzleGeometry.prototype = {
    baseplanerot: null, // unique rotations of the baseplane
    baseplanes: null,  // planes, corresponding to faces
    facenames: null,   // face names
+   faceplanes: null,  // face planes
    edgenames: null,   // edge names
    vertexnames: null, // vertexnames
+   geonormals: null,  // all geometric directions, with names and types
    moveplanes: [],    // the planes that split moves
    moveplanesets: [], // the move planes, in parallel sets
    movesetorders: [], // the order of rotations for each move set
+   movesetgeo: [],    // geometric feature information for move sets
+   movesetgeo: [],    // the geometrical features for these move planes
    faces: [],         // all the stickers
    basefacecount: 0,  // number of base faces
    stickersperface: 0,// number of stickers per face
@@ -486,6 +490,7 @@ PuzzleGeometry.prototype = {
 //   alphabetically first (and we will probably want to change this).
 //
       var facenames = [] ;
+      var faceplanes = [] ;
       var vertexnames = [] ;
       var edgenames = [] ;
       function searchaddelement(a, p, name) {
@@ -496,19 +501,12 @@ PuzzleGeometry.prototype = {
             }
          a.push([p, name]) ;
       }
-      function showthe(what, a) {
-         var allnames = a.map(function(_){
-            var r = '' ;
-            for (i=1; i<_.length; i++)
-               r += _[i] ;
-            return r ;
-         }) ;
-         console.log(what + ": " + allnames) ;
-      }
       for (var i=0; i<this.baseplanerot.length; i++) {
          var face = this.baseplanerot[i].rotateface(faces[0]) ;
+         var faceplane = boundary.rotateplane(this.baseplanerot[i]) ;
          var facename = String.fromCharCode(65+i) ;
          facenames.push([face, facename]) ;
+         faceplanes.push([faceplane, facename]) ;
       }
       for (var i=0; i<this.baseplanerot.length; i++) {
          var face = this.baseplanerot[i].rotateface(faces[0]) ;
@@ -563,12 +561,21 @@ PuzzleGeometry.prototype = {
          }
          vertexnames[i] = [vertexnames[i][0], r] ;
       }
+      var geonormals = [] ;
+      for (var i=0; i<faceplanes.length; i++)
+         geonormals.push(
+                       [faceplanes[i][0].makenormal(), faceplanes[i][1], 'f']) ;
+      for (var i=0; i<edgenames.length; i++)
+         geonormals.push([edgenames[i][0].makenormal(), edgenames[i][1], 'e']) ;
+      for (var i=0; i<vertexnames.length; i++)
+         geonormals.push(
+                     [vertexnames[i][0].makenormal(), vertexnames[i][1], 'v']) ;
       this.facenames = facenames ;
+      this.faceplanes = faceplanes ;
       this.edgenames = edgenames ;
       this.vertexnames = vertexnames ;
-      showthe('Faces', facenames) ;
-      showthe('Edges', edgenames) ;
-      showthe('Vertices', vertexnames) ;
+      this.geonormals = geonormals ;
+      console.log(geonormals) ;
       var zero = Quat(0, 0, 0, 0) ;
       this.edgedistance = faces[0][0].sum(faces[0][1]).smul(0.5).dist(zero) ;
       this.vertexdistance = faces[0][0].dist(zero) ;
@@ -725,6 +732,23 @@ PuzzleGeometry.prototype = {
       }
       var sizes = moverotations.map(function(_){return 1+_.length}) ;
       this.movesetorders = sizes ;
+      var movesetgeos = [] ;
+      for (var i=0; i<moveplanesets.length; i++) {
+         var p0 = moveplanesets[i][0].makenormal() ;
+         var neg = null ;
+         var pos = null ;
+         for (var j=0; j<this.geonormals.length; j++) {
+            var d = p0.dot(this.geonormals[j][0]) ;
+            if (Math.abs(d-1) < eps) {
+               pos = [this.geonormals[j][1], this.geonormals[j][2]] ;
+            } else if (Math.abs(d+1) < eps) {
+               neg = [this.geonormals[j][1], this.geonormals[j][2]] ;
+            }
+         }
+         movesetgeos.push([pos[0], pos[1], neg[0], neg[1]]) ;
+         console.log(" " + pos + " " + neg) ;
+      }
+      this.movesetgeos = movesetgeos ;
       //  Cubies are split by move plane sets.  For each cubie we can
       //  average its points to find a point on the interior of that
       //  cubie.  We can then check that point against all the move
@@ -924,8 +948,10 @@ PuzzleGeometry.prototype = {
       return {
          baseplanes: this.baseplanes,
          facenames: this.facenames,
+         faceplanes: this.faceplanes,
          vertexnames: this.vertexnames,
          edgenames: this.edgenames,
+         geonormals: this.geonormals,
       } ;
    },
    getmovesets: // get the move sets we support based on slices
@@ -1004,7 +1030,8 @@ PuzzleGeometry.prototype = {
          }
       }
    },
-   getmoveperms: // get basic move perms in an array, along with orders.
+   getmoveperms: // get basic move perms in an array, along with orders and
+                 // geometry.
    function() {
       var r = [] ;
       for (var k=0; k<this.moveplanesets.length; k++) {
