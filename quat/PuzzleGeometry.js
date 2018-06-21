@@ -1048,7 +1048,26 @@ PuzzleGeometry.prototype = {
                   perm[mperm[jj]] = mperm[ii] ;
                }
             }
-            r.push([perm, i, this.movesetgeos[k]]) ;
+            r.push([Perm(perm), i, slices, this.movesetgeos[k]]) ;
+         }
+      }
+      return r ;
+   },
+   getcookedmoveperms: // get moves that matter, with appropriate directions
+   // for instance, for the 3x3, only return face moves, and fix the ones
+   // at the extremes so they are to the right.
+   function() {
+      var m = this.getmoveperms() ;
+      var r = [] ;
+      for (var i=0; i<m.length; i++) {
+         // drop moves that are center slices only
+         if (m[i][1] * 2 == m[i][2])
+            continue ;
+         if (m[i][1] * 2 > m[i][2]) {
+            r.push([m[i][0].inv(), m[i][2]-m[i][1],
+                    m[i][2], m[i][3][2], m[i][3][3]]) ;
+         } else {
+            r.push([m[i][0], m[i][1], m[i][2], m[i][3][0], m[i][3][1]]) ;
          }
       }
       return r ;

@@ -283,12 +283,12 @@ function walknet(pg, fn, context, w, h) {
       facegeo.push(face2) ;
    }
    // Let's pretend we make a base move.
-   var moveperms = pg.getmoveperms() ;
+   var moveperms = pg.getcookedmoveperms() ;
    if (moveperms.length) {
-      for (var i=0; i<1; i++) {
+      for (var i=0; i<5; i++) {
          var rm = Math.floor(Math.random()*moveperms.length) ;
-         console.log("Move perm is slice " + moveperms[rm][1] + " of move from face " + geonet[moveperms[rm][2][0]] + " to face " + geonet[moveperms[rm][2][2]]) ;
-         pos = pos.rmul(Perm(moveperms[rm][0])) ;
+         console.log("Move perm is slice " + moveperms[rm][1] + " of move from face " + geonet[moveperms[rm][3]]) ;
+         pos = pos.rmul(moveperms[rm][0]) ;
       }
    }
    // Here's our final rendering call.
