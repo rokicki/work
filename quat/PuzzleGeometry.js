@@ -575,7 +575,6 @@ PuzzleGeometry.prototype = {
       this.edgenames = edgenames ;
       this.vertexnames = vertexnames ;
       this.geonormals = geonormals ;
-      console.log(geonormals) ;
       var zero = Quat(0, 0, 0, 0) ;
       this.edgedistance = faces[0][0].sum(faces[0][1]).smul(0.5).dist(zero) ;
       this.vertexdistance = faces[0][0].dist(zero) ;
