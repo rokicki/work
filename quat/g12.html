@@ -39,7 +39,7 @@ function checkchange() {
          "Vertex distance " + pg.vertexdistance + "<BR>" ;
       document.getElementById('data').innerHTML = desc ;
       pg.genperms() ;
-      display() ;
+      changeddisplay() ;
    }
 }
 function doselection(el) {
@@ -153,6 +153,24 @@ function drawedges(context, pts, color) {
 // the first edge from (0,0) to (1,1) and compute the minimum and
 // maximum vertex locations from this.  Then do a second walk, and
 // assign the actual geometry.
+var movenameperms = {} ;
+var pos = [] ;
+var colormap = [] ;
+var facegeo = [] ;
+var movelist = [] ;
+function domove(movename) {
+   pos = pos.rmul(movenameperms[movename]) ;
+   display() ;
+}
+function scramble() {
+   for (var i=0; i<70; i++)
+      pos = pos.rmul(movenameperms[movelist[Math.floor(movelist.length*Math.random())]]) ;
+   display() ;
+}
+function solve() {
+   pos = pg.getsolved() ;
+   display() ;
+}
 function walknet(pg, fn, context, w, h) {
    var net = nets[fn] ;
    if (net == null) {
@@ -269,9 +287,9 @@ function walknet(pg, fn, context, w, h) {
    // base face number to color, and we want to map from geo face number
    // to 2D geometry.  These can be reused as long as the puzzle overall
    // orientation and canvas size remains unchanged.
-   var pos = pg.getsolved() ;
-   var colormap = [] ;
-   var facegeo = [] ;
+   pos = pg.getsolved() ;
+   colormap = [] ;
+   facegeo = [] ;
    for (var i=0; i<pg.basefacecount; i++)
       colormap[i] = colors[fn][geonet[pg.facenames[i][1]]] ;
    for (var i=0; i<pg.faces.length; i++) {
@@ -284,19 +302,44 @@ function walknet(pg, fn, context, w, h) {
    }
    // Let's pretend we make a base move.
    var moveperms = pg.getcookedmoveperms() ;
-   if (moveperms.length) {
-      for (var i=0; i<5; i++) {
-         var rm = Math.floor(Math.random()*moveperms.length) ;
-         console.log("Move perm is slice " + moveperms[rm][1] + " of move from face " + geonet[moveperms[rm][3]]) ;
-         pos = pos.rmul(moveperms[rm][0]) ;
+   var movecount = 0 ;
+   document.getElementById("movebuttons").innerHTML = "" ;
+   var movenames = [] ;
+   movenameperms = {} ;
+   movelist = [] ;
+   movenames.push('<button type=button onclick="scramble()">Scramble</button>') ;
+   movenames.push('<button type=button onclick="solve()">Solve</button>') ;
+   for (var i=0; i<moveperms.length; i++) {
+      movecount += moveperms[i][5]-1 ;
+      var geoname = moveperms[i][3] ;
+      var netname = '' ;
+      var mul = moveperms[i][0] ;
+      var curperm = mul ;
+      for (var j=0; j<geoname.length; j++)
+         netname = netname + geonet[geoname[j]] ;
+      if (moveperms[i][1] > 0)
+         netname = (moveperms[i][1]+1)+netname ;
+      for (var j=1; j<moveperms[i][5]; j++) {
+         if (j == 1)
+            movename = netname ;
+         else if (j + 1 == moveperms[i][5])
+            movename = netname + '-' ;
+         else
+            movename = netname + j ;
+         movelist.push(movename) ;
+         movenameperms[movename] = curperm ;
+         curperm = curperm.mul(mul) ;
+         movenames.push('<button type=button onclick="domove(' + "'" +
+                          movename + "'" + ')">' + movename + '</button>') ;
       }
    }
-   // Here's our final rendering call.
-   for (var i=0; i<pg.faces.length; i++)
-      drawedges(context, facegeo[i], colormap[pos.p[i]]) ;
-   return geos ;
+   document.getElementById("movebuttons").innerHTML = movenames.join(" ") ;
+   console.log("Total moves is " + movecount) ;
 }
-function display() {
+var trim ;
+var canwidth ;
+var canheight ;
+function changeddisplay() {
    if (!pg)
       return ;
    var boundarygeo = pg.getboundarygeometry() ;
@@ -304,15 +347,24 @@ function display() {
    var polyn = face0.length ; // number of vertices; 3, 4, or 5
    var canvas = document.getElementById("canvas");
    var context = canvas.getContext('2d');
-   var trim = 10 ;
+   trim = 10 ;
+   canwidth = canvas.width - 2 * trim ;
+   canheight = canvas.height - 2 * trim ;
+   walknet(pg, boundarygeo.facenames.length,
+           context, canwidth, canheight) ;
+   display() ;
+}
+function display() {
+   if (!pg)
+      return ;
+   var canvas = document.getElementById("canvas");
+   var context = canvas.getContext('2d');
    context.save() ;
    context.clearRect(0, 0, canvas.width, canvas.height) ;
-   var canwidth = canvas.width - 2 * trim ;
-   var canheight = canvas.height - 2 * trim ;
    context.translate(trim, trim+canheight) ;
    try {
-      walknet(pg, boundarygeo.facenames.length,
-              context, canwidth, canheight) ;
+      for (var i=0; i<pg.faces.length; i++)
+         drawedges(context, facegeo[i], colormap[pos.p[i]]) ;
    } finally {
       context.restore() ;
    }
@@ -326,6 +378,7 @@ function setup() {
 </script>
 </head>
 <body onload="setup();">
+<table><tr><td>
 Desc <input type=text id=desc value="c f 0.3333333333" size="50">
 </input><br>
 <select id="puzzleoptions">
@@ -363,6 +416,6 @@ Desc <input type=text id=desc value="c f 0.3333333333" size="50">
 <option value="i v 0.84">icosahedron static faces</option>
 <option value="i v 0.73">icosahedron moving faces</option>
 </select>
-<div id=data></div>
+<div id=data></div></td><td><div id="movebuttons"></div></td></tr></table>
 <canvas id="canvas" width=800 height=500>No canvas support?</canvas>
 </body></html>

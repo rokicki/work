@@ -1048,7 +1048,8 @@ PuzzleGeometry.prototype = {
                   perm[mperm[jj]] = mperm[ii] ;
                }
             }
-            r.push([Perm(perm), i, slices, this.movesetgeos[k]]) ;
+            r.push([Perm(perm), i, slices, this.movesetgeos[k],
+                    this.movesetorders[k]]) ;
          }
       }
       return r ;
@@ -1065,9 +1066,9 @@ PuzzleGeometry.prototype = {
             continue ;
          if (m[i][1] * 2 > m[i][2]) {
             r.push([m[i][0].inv(), m[i][2]-m[i][1],
-                    m[i][2], m[i][3][2], m[i][3][3]]) ;
+                    m[i][2], m[i][3][2], m[i][3][3], m[i][4]]) ;
          } else {
-            r.push([m[i][0], m[i][1], m[i][2], m[i][3][0], m[i][3][1]]) ;
+            r.push([m[i][0], m[i][1], m[i][2], m[i][3][0], m[i][3][1], m[i][4]]) ;
          }
       }
       return r ;
