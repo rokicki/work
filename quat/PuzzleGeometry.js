@@ -1195,6 +1195,58 @@ PuzzleGeometry.prototype = {
       }
       return Perm(r) ;
    },
+   getpuzzles: // get some simple definitions of basic puzzles
+   function() {
+      return [
+         "c f 0", ",2x2x2",
+         "c f 0.333333333333333", ",3x3x3",
+         "c f 0.5 f 0", ",4x4x4",
+         "c f 0.6 f 0.2", ",5x5x5",
+         "c f 0.666666666666667 f 0.333333333333333 f 0", ",6x6x6",
+         "c f 0.714285714285714 f 0.428571428571429 f 0.142857142857143", ",7x7x7",
+         "c f 0.75 f 0.5 f 0.25 f 0", ",8x8x8",
+         "c f 0.777777777777778 f 0.555555555555556 f 0.333333333333333 f 0.111111111111111", ",9x9x9",
+         "c f 0.8 f 0.6 f 0.4 f 0.2 f 0", ",10x10x10",
+         "c f 0.818181818181818 f 0.636363636363636 f 0.454545454545455 f 0.272727272727273 f 0.0909090909090909", ",11x11x11",
+         "c f 0.833333333333333 f 0.666666666666667 f 0.5 f 0.333333333333333 f 0.166666666666667 f 0", ",12x12x12",
+         "c f 0.846153846153846 f 0.692307692307692 f 0.538461538461538 f 0.384615384615385 f 0.230769230769231 f 0.0769230769230769", ",13x13x13",
+         "c v 0", ",skewb",
+         "c v 0.275", ",master skewb",
+         "c v 0 v 0.38", ",professor skewb",
+         "c e 0.707106781186547", ",helicopter",
+         "c v 0.577350269189626", ",dino",
+         "t v 0.333333333333333 v 1.66666666666667", ",pyraminx",
+         "d f 0.7", ",megaminx",
+         "d f 0.64 f 0.82", ",gigaminx",
+         "d f 0", ",pentultimate",
+         "d v 0.937962371425399", ",starminx",
+         "d f 0.23606797749979", ",starminx 2",
+         "d v 0", ",dodec star",
+         "o f 0", ",skewb diamond",
+         "o f 0.333333333333333", ",octahedron diamond",
+         "i f 0", ",icosahedron skewb",
+         "i v 0", ",icosahedron vskewb",
+         "i v 0.18759247376021", ",icosahedron 2",
+         "i v 0.18759247376021 e 0", ",icosahedron 3",
+         "i v 0.84", ",icosahedron static faces",
+         "i v 0.73", ",icosahedron moving faces",
+      ] ;
+   },
+   parsedesc: // parse a text description
+   function(s) {
+      var a = s.split(/ /).filter(Boolean) ;
+      if (a.length % 2 == 0)
+         return false ;
+      if (a[0] != 'o' && a[0] != 'c' && a[0] != 'i' && a[0] != 'd' && a[0] != 't')
+         return false ;
+      var r = [] ;
+      for (var i=1; i<a.length; i += 2) {
+         if (a[i] != 'f' && a[i] != 'v' && a[i] != 'e')
+            return false ;
+         r.push([a[i], a[i+1]]) ;
+      }
+      return [a[0], r] ;
+   },
 } ;
 function Perm(p_) {
    if (this instanceof Perm) {
