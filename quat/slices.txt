@@ -1,0 +1,71 @@
+In general, if there are n-1 cutting planes on one axis,
+then there are n slice moves on that axis.  We don't need
+all the slice moves; including them makes the state space
+much larger.  For instance, on the 3x3, it is conventional
+to only count face moves, and allow the core to be turned
+with 0-cost rotational moves (x,y,z), although some people
+do like for instance E and M moves to rotate slices.
+
+We describe some common puzzles and what moves they should
+include; we describe slices by bitmasks.
+
+Cubical puzzles:
+
+2x2x2:  use faces moves (1 and 2).  For ksolve, etc., lock
+   down one corner (so only moves 1 on each axis).  The
+   corner we lock down is BDL.
+3x3x3:  use only face moves (so 1 and 4).
+4x4x4:  use either face moves and slice moves (1, 2, 4, 8)
+   or face moves and block moves (1, 3, 12, 8).  For
+   ksolve, etc., lock down a corner (so 1, 3, 7).
+5x5x5:  use either slice moves (1, 2, 8, 16) or block
+   (1, 3, 24, 16).  No need to lock down a corner.
+Bigger even cubes follow 4x4x4; bigger odd cubes follow 5x5x5.
+Skewb:  Only want one move per axis but it has to be a tetrad
+   and this doesn't happen by itself.  Simply eliminate
+   moves that permute one of the orbits of the corners.
+   Need better names for the moves; FRD is too verbose.
+   Layout is currently not like WCA layout; we need to skew the
+   faces.
+Master skewb:  We can choose to lock down a corner, or to
+   only move four grips (and use deep moves for them).
+   I think this ends up the same in ksolve but we'll have to
+   see.
+Professor skewb:  same answer as Master skewb.
+Helicopter:  For the UI, 3 slices, so don't move (invisible)
+   core.  I believe you can attain every rotation of solved
+   from the usual moves, so we need to handle multiple solved
+   states.  Move names might be correct from just cube faces.
+Dino:  same as helicopter, although corner names are long.
+
+Tetrahedral puzzles:
+
+Pyraminx:  convention is tips and "big tips", so we want to
+   choose moves that are not on a face (1 and 3, where the
+   vertex is 1 and a face is 4).  This is the only puzzle
+   where different types of geometric entities are directly
+   opposite each other.  We definitely need to rename moves.
+   Also, our color convention is currently probably wrong.
+
+Octahedral puzzles:
+
+Skewb diamond:  like a 2x2.  Freeze a corner for the 2x2x2.
+Octahedron diamond:  This is like a 3x3, but there is no
+   part of the face that stays.  For the UI we want to
+   permit face moves; for ksolve, we want to freeze a
+   corner.
+
+Dodecahedral puzzles:
+
+Megaminx:  Same as 3x3 above.
+Gigaminx:  Same as 5x5 above.
+Pentultimate:  We need to lock down a corner for ksolve.
+   This gives a 60x reduction in state space.
+
+Note that our current program constraints do not permit kilominx
+   (although Megaminx edges is the same).  Also, the color scheme
+   for dodecahedral puzzles needs to be improved.
+
+Icosahedral puzzles:
+
+
