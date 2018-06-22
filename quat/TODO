@@ -1,3 +1,7 @@
+Move mapping and other functionality into PuzzleGeometry.  Move slice
+selection and other options into PuzzleGeometry.  Make g12 as small as
+we possibly can.  Move default puzzle sets into PuzzleGeometry.
+
 Improve epsilon management; ensure we don't loop forever if something
 goes wrong with epsilon calculations; add too-small-face warning or
 something of that nature.

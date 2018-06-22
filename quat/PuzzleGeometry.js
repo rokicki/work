@@ -422,6 +422,11 @@ PuzzleGeometry.prototype = {
    moverotations: [], // move rotations
    cubiekey: {},      // cubie locator
    facelisthash: {},  // face list by key
+   cubiesetname: [],  // cubie set names
+   cubieords: [],     // the size of each orbit
+   cubiesetnums: [],
+   cubieordnums: [],
+   oribitoris: [],    // the orientation size of each orbit
    movesbyslice: [],  // move as perms by slice
    cmovesbyslice: [], // cmoves as perms by slice
    findelement: // find something in facenames, vertexnames, edgenames
@@ -773,6 +778,7 @@ PuzzleGeometry.prototype = {
          }
          facelisthash[s].push(i) ;
          cubiehash[s].push(face) ;
+//       cubiehash[s].push(i) ;
       }
       this.cubiekey = cubiekey ;
       this.facelisthash = facelisthash ;
@@ -819,7 +825,7 @@ PuzzleGeometry.prototype = {
          var key = this.keyface(faces[i]) ;
          for (var j=0; j<facelisthash[key].length; j++)
             if (i==facelisthash[key][j]) {
-               facetocubies.push([cubiehash[key], j]) ;
+               facetocubies.push([cubiekey[key], j]) ;
                break ;
             }
       }
@@ -865,6 +871,11 @@ PuzzleGeometry.prototype = {
          cubiesetnum++ ;
       }
       this.orbits = cubieords.length ;
+      this.cubiesetnums = cubiesetnums ;
+      this.cubieordnums = cubieordnums ;
+      this.cubiesetname = cubiesetname ;
+      this.cubieords = cubieords ;
+      this.orbitoris = orbitoris ;
       // show the orbits
       console.log("Cubie orbit sizes " + cubieords) ;
    },
@@ -926,7 +937,7 @@ PuzzleGeometry.prototype = {
                if (b.length > 2 && !cubiedone[b[0]])
                   slicecmoves.push(b) ;
                for (var j=0; j<b.length; j += 2)
-                  cubiedone[b[j]]++ ;
+                  cubiedone[b[j]] = true ;
             }
             axismoves.push(slicemoves) ;
             axiscmoves.push(slicecmoves) ;
@@ -1000,6 +1011,107 @@ PuzzleGeometry.prototype = {
       console.log("Gen:=[") ;
       console.log(perms.join(',')) ;
       console.log("];") ;
+   },
+   writeksolve: // write ksolve; mirrored off original q.pl
+   function() {
+      var setmoves = [] ;
+      for (var k=0; k<this.moveplanesets.length; k++) {
+         var moveplaneset = this.moveplanesets[k] ;
+         var slices = moveplaneset.length ;
+         var moveset = this.getmovesets(slices) ;
+         var allbits = 0 ;
+         for (var i=0; i<moveset.length; i++)
+            allbits |=moveset[i] ;
+         if (moveset.length == 0)
+            throw "Bad moveset length in writeksolve" ;
+         var axiscmoves = this.cmovesbyslice[k] ;
+         for (var i=0; i<axiscmoves.length; i++) {
+            if (((allbits >> i) & 1) == 0)
+               continue ;
+            var slicecmoves = axiscmoves[i] ;
+            for (var j=0; j<slicecmoves.length; j++) {
+               var ind = this.cubiesetnums[slicecmoves[j][0]] ;
+               if (!setmoves[ind])
+                  setmoves[ind] = 1 ;
+               else
+                  setmoves[ind]++ ;
+            }
+         }
+      }
+      for (var i=0; i<this.cubiesetname.length; i++) {
+         if (!setmoves[i])
+            continue ;
+         console.log("Set " + this.cubiesetname[i] + " " + this.cubieords[i] +
+                     " " + this.orbitoris[i]) ;
+      }
+      console.log("") ;
+      console.log("Solved") ;
+      for (var i=0; i<this.cubiesetname.length; i++) {
+         if (!setmoves[i])
+            continue ;
+         console.log(this.cubiesetname[i]) ;
+         var p = [] ;
+         for (var j=1; j<=this.cubieords[i]; j++)
+            p.push(j) ;
+         console.log(p.join(" ")) ;
+      }
+      console.log("End") ;
+      console.log("") ;
+      for (var k=0; k<this.moveplanesets.length; k++) {
+         var moveplaneset = this.moveplanesets[k] ;
+         var slices = moveplaneset.length ;
+         var moveset = this.getmovesets(slices) ;
+         var movesetgeo = this.movesetgeos[k] ;
+         for (var i=0; i<moveset.length; i++) {
+            var movename = (i == 0 ? "" : i) + movesetgeo[0] ;
+            var movebits = moveset[i] ;
+            console.log("Move " + movename) ;
+            var perms = [] ;
+            var oris = [] ;
+            for (var ii=0; ii<this.cubiesetname.length; ii++) {
+               var p = [] ;
+               for (var kk=0; kk<this.cubieords[ii]; kk++)
+                  p.push(kk) ;
+               perms.push(p) ;
+               var o = [] ;
+               for (var kk=0; kk<this.cubieords[ii]; kk++)
+                  o.push(0) ;
+               oris.push(o) ;
+            }
+            var axiscmoves = this.cmovesbyslice[k] ;
+            for (var m=0; m<axiscmoves.length; m++) {
+               if (((movebits >> m) & 1) == 0)
+                  continue ;
+               var slicecmoves = axiscmoves[m] ;
+               for (var j=0; j<slicecmoves.length; j++) {
+                  var mperm = slicecmoves[j] ;
+                  var setnum = this.cubiesetnums[mperm[0]] ;
+                  for (var ii=0; ii<mperm.length; ii += 2)
+                     mperm[ii] = this.cubieordnums[mperm[ii]] ;
+                  for (var ii=0; ii<mperm.length; ii += 2) {
+                     perms[setnum][mperm[ii]] = mperm[(ii+2)%mperm.length] ;
+                     oris[setnum][mperm[ii]] =
+                            (mperm[(ii+mperm.length-1)%mperm.length] -
+                             mperm[(ii+1)%mperm.length] +
+                             this.orbitoris[setnum]) % this.orbitoris[setnum] ;
+                  }
+               }
+            }
+            for (var ii=0; ii<this.cubiesetname.length; ii++) {
+               if (!setmoves[ii])
+                  continue ;
+               console.log(this.cubiesetname[ii]) ;
+               var r = [] ;
+               for (var kk=0; kk<perms[ii].length; kk++)
+                  r.push(perms[ii][kk]+1) ;
+               console.log(r.join(" ")) ;
+               if (this.orbitoris[ii] > 1)
+                  console.log(oris[ii].join(" ")) ;
+            }
+            console.log("End") ;
+            console.log("") ;
+         }
+      }
    },
    writess: // write a set of gens in perm format
    function() {
@@ -1161,4 +1273,5 @@ if (typeof(process) !== 'undefined' &&
                 " shortedge " + pg.shortedge) ;
 // pg.writegap() ;
 // pg.writess() ;
+   pg.writeksolve() ;
 }

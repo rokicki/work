@@ -974,6 +974,7 @@ sub writeksolve {
          for (my $i=0; $i<@axiscmoves; $i++) {
             next if (($movebits >> $i) & 1) == 0 ;
             my @slicecmoves = @{$axiscmoves[$i]} ;
+ print "Slice cmove length is ", scalar @slicecmoves, "\n" ;
             for (my $j=0; $j<@slicecmoves; $j++) {
                my @mperm = @{$slicecmoves[$j]} ;
                my $setnum = $cubiesetnum[$mperm[0]] ;
