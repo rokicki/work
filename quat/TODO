@@ -2,17 +2,6 @@ Improve epsilon management; ensure we don't loop forever if something
 goes wrong with epsilon calculations; add too-small-face warning or
 something of that nature.
 
-Get moves working properly, with move names.  Need to improve move
-generation to include geometry information.
-
-Octahedron vertices have four-char names; icosahedron vertices have
-five-char names.  That's less concise than I would prefer.
-
-Issue:  my notion of a cubie is wrong; for the 3x3x3, core is six cubies
-with no orientation (because slices divide them up); for starminx,
-core is one cubie (!) with 60 orientations and we can't represent this
-group with ksolve rotations.  So we need to improve this.
-
 Generate flattened SVG net representation to integrate with Lucas
 
 Generate pcubes format for puzzles?
