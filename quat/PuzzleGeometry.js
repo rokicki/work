@@ -429,6 +429,83 @@ PuzzleGeometry.prototype = {
    oribitoris: [],    // the orientation size of each orbit
    movesbyslice: [],  // move as perms by slice
    cmovesbyslice: [], // cmoves as perms by slice
+//
+// This is a description of the nets and the external names we give each
+// face.  The names should be single-character upper-case alpahbetics so
+// we can easily also name and distinguish vertices and edges, but we
+// may change this in the future.  The nets consist of a list of lists.
+// Each list gives the name of a face, and then the names of the
+// faces connected to that face (in the net) in clockwise order.
+// The length of each list should be one more than the number of
+// edges in the regular polygon for that face.  All polygons must
+// have the same number of edges.
+// The first two faces in the first list must describe a horizontal edge
+// that is at the bottom of a regular polygon.  The first two faces in
+// every subsequent list for a given polytope must describe a edge that
+// is directly connected in the net and has already been described (this
+// sets the location and orientation of the polygon for that face.
+// Any edge that is not directly connected in the net should be given
+// the empty string as the other face.  All faces do not need to have
+// a list starting with that face; just enough to describe the full
+// connectivity of the net.
+//
+   defaultnets: {
+      4: // four faces: tetrahedron
+      [
+         ["F", "D", "L", "R"],
+      ],
+      6: // six faces: cube
+      [
+         ["F", "D", "L", "U", "R"],
+         ["R", "F", "", "B", ""],
+      ],
+      8: // eight faces: octahedron
+      [
+         ["F", "D", "L", "R"],
+         ["D", "F", "N", ""],
+         ["N", "D", "", "B"],
+         ["B", "N", "U", "M"],
+      ],
+      12: // twelve faces:  dodecahedron
+      [
+         ["U", "F", "", "", "", ""],
+         ["F", "U", "R", "C", "A", "L"],
+         ["R", "F", "", "", "E", ""],
+         ["E", "R", "", "B", "", ""],
+         ["B", "E", "G", "H", "I", "D"],
+      ],
+      20: // twenty faces: icosahedron
+      [
+         ["R", "C", "F", "E"],
+         ["F", "R", "L", "U"],
+         ["L", "F", "A", ""],
+         ["E", "R", "G", "I"],
+         ["I", "E", "S", "H"],
+         ["S", "I", "J", "B"],
+         ["B", "S", "K", "D"],
+         ["K", "B", "M", "O"],
+         ["O", "K", "P", "N"],
+         ["P", "O", "Q", ""],
+      ],
+      },
+   net: [],
+   defaultcolors: {
+// the colors should use the same naming convention as the nets, above.
+      4: { F: '#ffffff', D: '#ff0000', L: '#00ff00', R: '#0000ff', },
+      6: { U: '#ffffff', F: '#00ff00', R: '#ff0000',
+           D: '#ffff00', B: '#0000ff', L: '#ff8000', },
+      8: { U: '#e085b9', F: '#080d99', R: '#c1e35c', D: '#22955e',
+           B: '#9121ab', L: '#b27814', M: '#0d35ad', N: '#eb126b', },
+      12: { U: '#b62d67', F: '#769500', R: '#88132b', C: '#d9af2f',
+            A: '#fc74d7', L: '#d7b6f1', E: '#ee53b9', B: '#75f491',
+            G: '#ab5947', H: '#ce5a57', I: '#f09e4f', D: '#0d24c0', },
+      20: { R: '#db69f0', C: '#178fde', F: '#23238b', E: '#9cc726',
+            L: '#2c212d', U: '#177fa7', A: '#e0de7f', G: '#2b57c0',
+            I: '#41126b', S: '#4b8c28', H: '#7c098d', J: '#7fe7b4',
+            B: '#85fb74', K: '#3f4bc3', D: '#0ff555', M: '#f1c2c8',
+            O: '#58d340', P: '#c514f2', N: '#14494e', Q: '#8b1be1', },
+   },
+   colors: [],
    findelement: // find something in facenames, vertexnames, edgenames
    function findelement(a, p) {
       for (var i=0; i<a.length; i++)
@@ -464,6 +541,8 @@ PuzzleGeometry.prototype = {
                        function(_){ return baseplane.rotateplane(_) }) ;
       this.baseplanes = baseplanes ;
       this.basefacecount = baseplanes.length ;
+      this.net = this.defaultnets[baseplanes.length] ;
+      this.colors = this.defaultcolors[baseplanes.length] ;
       console.log("We see " + baseplanes.length + " base planes.") ;
       var baseface = pg.getface(baseplanes) ;
       console.log("Basic face has " + baseface.length + " vertices.") ;
