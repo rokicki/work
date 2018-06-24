@@ -1217,12 +1217,27 @@ PuzzleGeometry.prototype = {
             for (var ii=0; ii<this.cubiesetname.length; ii++) {
                if (!setmoves[ii])
                   continue ;
+               var needed = false ;
+               for (var kk=0; kk<perms[ii].length; kk++)
+                  if (perms[ii][kk] != kk) {
+                     needed = true ;
+                     break ;
+                  }
+               var needori = false ;
+               if (this.orbitoris[ii] > 1)
+                  for (var kk=0; kk<oris[ii].length; kk++)
+                     if (oris[ii][kk] != 0) {
+                        needori = true ;
+                        break ;
+                     }
+               if (!needed && !needori)
+                  continue ;
                console.log(this.cubiesetname[ii]) ;
                var r = [] ;
                for (var kk=0; kk<perms[ii].length; kk++)
                   r.push(perms[ii][kk]+1) ;
                console.log(r.join(" ")) ;
-               if (this.orbitoris[ii] > 1)
+               if (this.orbitoris[ii] > 1 && needori)
                   console.log(oris[ii].join(" ")) ;
             }
             console.log("End") ;
@@ -1439,7 +1454,7 @@ if (typeof(process) !== 'undefined' &&
    console.log("Stickers " + pg.stickersperface + " cubies " +
                pg.cubies.length + " orbits " + pg.orbits +
                 " shortedge " + pg.shortedge) ;
-   pg.writegap() ;
+// pg.writegap() ;
 // pg.writess() ;
-// pg.writeksolve() ;
+   pg.writeksolve() ;
 }
