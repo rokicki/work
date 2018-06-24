@@ -1044,15 +1044,17 @@ PuzzleGeometry.prototype = {
       } ;
    },
    getmovesets: // get the move sets we support based on slices
-   // For now, simplicity, we return all slices, STM, one per, so we
-   // include all rotations.  We can later reduce this based on
-   // orientation conventions and/or support multislice moves.
+   // for even values we omit the middle "slice".  This isn't perfect
+   // but it is what we do for now.
    function(slices) {
       if (slices > 30)
          throw "Too many slices for getmovesets bitmasks" ;
       var r = [] ;
-      for (var i=0; i<=slices; i++)
+      for (var i=0; i<=slices; i++) {
+         if (i + i == slices)
+            continue ;
          r.push(1<<i) ;
+      }
       return r ;
    },
    writegap: // write out a gap set of generators
@@ -1090,6 +1092,34 @@ PuzzleGeometry.prototype = {
       console.log("Gen:=[") ;
       console.log(perms.join(',')) ;
       console.log("];") ;
+   },
+   getmovename: // generate a move name based on bits, slice, and geo
+   // if the move name is from the opposite face, say so.
+   function(geo, bits, slices) {
+      // find the face that's turned.
+      var nbits = 0 ;
+      var inverted = 0 ;
+      for (var i=0; i<=slices; i++)
+         if ((bits >> i) & 1)
+            nbits |= 1<<(slices-i) ;
+      if (nbits < bits) { // flip if most of the move is on the other side
+         geo = [geo[2], geo[3], geo[0], geo[1]] ;
+         bits = nbits ;
+         inverted++ ;
+      }
+      // for now we only handle single slice moves; we need to add block moves
+      if (bits & (bits - 1))
+         throw "We only support move names that are single slices right now" ;
+      var movename = geo[0] ;
+      if (bits > 1) {
+         var prefix = 1 ;
+         while (bits > 1) {
+            bits >>= 1 ;
+            prefix++ ;
+         }
+         movename = prefix + movename ;
+      }
+      return [movename, inverted] ;
    },
    writeksolve: // write ksolve; mirrored off original q.pl
    function() {
@@ -1142,8 +1172,10 @@ PuzzleGeometry.prototype = {
          var moveset = this.getmovesets(slices) ;
          var movesetgeo = this.movesetgeos[k] ;
          for (var i=0; i<moveset.length; i++) {
-            var movename = (i == 0 ? "" : i) + movesetgeo[0] ;
             var movebits = moveset[i] ;
+            var mna = this.getmovename(movesetgeo, movebits, slices) ;
+            var movename = mna[0] ;
+            var inverted = mna[1] ;
             console.log("Move " + movename) ;
             var perms = [] ;
             var oris = [] ;
@@ -1167,10 +1199,16 @@ PuzzleGeometry.prototype = {
                   var setnum = this.cubiesetnums[mperm[0]] ;
                   for (var ii=0; ii<mperm.length; ii += 2)
                      mperm[ii] = this.cubieordnums[mperm[ii]] ;
+                  var inc = 2 ;
+                  var oinc = mperm.length-1 ;
+                  if (inverted) {
+                     inc = mperm.length - 2 ;
+                     oinc = 3 ;
+                  }
                   for (var ii=0; ii<mperm.length; ii += 2) {
-                     perms[setnum][mperm[ii]] = mperm[(ii+2)%mperm.length] ;
+                     perms[setnum][mperm[ii]] = mperm[(ii+inc)%mperm.length] ;
                      oris[setnum][mperm[ii]] =
-                            (mperm[(ii+mperm.length-1)%mperm.length] -
+                            (mperm[(ii+oinc)%mperm.length] -
                              mperm[(ii+1)%mperm.length] +
                              this.orbitoris[setnum]) % this.orbitoris[setnum] ;
                   }
@@ -1252,7 +1290,6 @@ PuzzleGeometry.prototype = {
       var m = this.getmoveperms() ;
       var r = [] ;
       for (var i=0; i<m.length; i++) {
-         // drop moves that are center slices only
          if (m[i][1] * 2 == m[i][2])
             continue ;
          if (m[i][1] * 2 > m[i][2]) {
@@ -1402,7 +1439,7 @@ if (typeof(process) !== 'undefined' &&
    console.log("Stickers " + pg.stickersperface + " cubies " +
                pg.cubies.length + " orbits " + pg.orbits +
                 " shortedge " + pg.shortedge) ;
-// pg.writegap() ;
+   pg.writegap() ;
 // pg.writess() ;
-   pg.writeksolve() ;
+// pg.writeksolve() ;
 }
