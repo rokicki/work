@@ -1,11 +1,13 @@
 Move mapping and other functionality into PuzzleGeometry.  Move slice
 selection and other options into PuzzleGeometry.  Make g12 as small as
-we possibly can.  Move default puzzle sets into PuzzleGeometry.
+we possibly can.
 
 Note that for some puzzles, like helicopter, if we permit slice turns
 than the orbits are different/larger, so really we don't want to create
 orbits as early as we currently do.  We need to pick moves before we
 create orbits, and/or recreate orbits when we change move selection.
+We also want to be able to evaluate subsets of puzzles, specifically
+corners or edges or centers separately (both gap and ksolve).
 
 Improve epsilon management; ensure we don't loop forever if something
 goes wrong with epsilon calculations; add too-small-face warning or
