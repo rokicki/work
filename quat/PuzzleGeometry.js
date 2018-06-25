@@ -534,7 +534,7 @@ PuzzleGeometry.prototype = {
          default: throw "Bad shape argument: " + c ;
       }
       this.rotations = pg.closure(g) ;
-      console.log("We see " + this.rotations.length + " rotations.") ;
+      console.log("# Rotations: " + this.rotations.length) ;
       var baseplane = g[0] ;
       this.baseplanerot = pg.uniqueplanes(baseplane, this.rotations) ;
       var baseplanes = this.baseplanerot.map(
@@ -543,9 +543,9 @@ PuzzleGeometry.prototype = {
       this.basefacecount = baseplanes.length ;
       this.net = this.defaultnets[baseplanes.length] ;
       this.colors = this.defaultcolors[baseplanes.length] ;
-      console.log("We see " + baseplanes.length + " base planes.") ;
+      console.log("# Base planes: " + baseplanes.length) ;
       var baseface = pg.getface(baseplanes) ;
-      console.log("Basic face has " + baseface.length + " vertices.") ;
+      console.log("# Face vertices: " + baseface.length) ;
       var facenormal = baseplanes[0].makenormal() ;
       var edgenormal = baseface[0].sum(baseface[1]).makenormal() ;
       var vertexnormal = baseface[0].makenormal() ;
@@ -561,7 +561,7 @@ PuzzleGeometry.prototype = {
          cutplanes.push(normal.makecut(cuts[i][1])) ;
       }
       var boundary = Quat(1, facenormal.b, facenormal.c, facenormal.d) ;
-      console.log("Boundary is " + boundary) ;
+      console.log("# Boundary is " + boundary) ;
       var planerot = pg.uniqueplanes(boundary, this.rotations) ;
       var planes = planerot.map(function(_){return boundary.rotateplane(_)}) ;
       var faces = [pg.getface(planes)] ;
@@ -662,7 +662,7 @@ PuzzleGeometry.prototype = {
       var zero = Quat(0, 0, 0, 0) ;
       this.edgedistance = faces[0][0].sum(faces[0][1]).smul(0.5).dist(zero) ;
       this.vertexdistance = faces[0][0].dist(zero) ;
-      console.log("Distances: face " + 1 + " edge " + this.edgedistance +
+      console.log("# Distances: face " + 1 + " edge " + this.edgedistance +
                   " vertex " + this.vertexdistance) ;
       // expand cutplanes by rotations.  We only work with one face here.
       for (var c=0; c<cutplanes.length; c++) {
@@ -682,7 +682,7 @@ PuzzleGeometry.prototype = {
          }
       }
       this.faces = faces ;
-      console.log("Faces is now " + faces.length) ;
+      console.log("# Faces is now " + faces.length) ;
       this.stickersperface = faces.length ;
       //  Find and report the shortest edge in any of the faces.  If this
       //  is small the puzzle is probably not practical or displayable.
@@ -696,7 +696,7 @@ PuzzleGeometry.prototype = {
          }
       }
       this.shortedge = shortedge ;
-      console.log("Short edge is " + shortedge) ;
+      console.log("# Short edge is " + shortedge) ;
    },
    keyface: // take a face and figure out the sides of each move plane
    function(face) {
@@ -755,7 +755,7 @@ PuzzleGeometry.prototype = {
       // take our newly split base face and expand it by the rotation matrix.
       // this generates our full set of "stickers".
       this.faces = Quat.prototype.expandfaces(this.baseplanerot, this.faces) ;
-      console.log("Total stickers is now " + this.faces.length) ;
+      console.log("# Total stickers is now " + this.faces.length) ;
       // Split moveplanes into a list of parallel planes.
       var moveplanesets = [] ;
       for (var i=0; i<this.moveplanes.length; i++) {
@@ -785,7 +785,7 @@ PuzzleGeometry.prototype = {
       }
       this.moveplanesets = moveplanesets ;
       var sizes = moveplanesets.map(function(_){return _.length}) ;
-      console.log("Move plane sets: " + sizes) ;
+      console.log("# Move plane sets: " + sizes) ;
       // for each of the move planes, find the rotations that are relevant
       var moverotations = [] ;
       for (var i=0; i<moveplanesets.length; i++)
@@ -829,7 +829,6 @@ PuzzleGeometry.prototype = {
             }
          }
          movesetgeos.push([pos[0], pos[1], neg[0], neg[1]]) ;
-         console.log(" " + pos + " " + neg) ;
       }
       this.movesetgeos = movesetgeos ;
       //  Cubies are split by move plane sets.  For each cubie we can
@@ -861,7 +860,7 @@ PuzzleGeometry.prototype = {
       }
       this.cubiekey = cubiekey ;
       this.facelisthash = facelisthash ;
-      console.log("Cubies: " + Object.keys(cubiehash).length) ;
+      console.log("# Cubies: " + Object.keys(cubiehash).length) ;
       //  Sort the cubies around each corner so they are clockwise.  Only
       //  relevant for cubies that actually are corners (three or more
       //  faces).  In general cubies might have many faces; for icosohedrons
@@ -956,7 +955,7 @@ PuzzleGeometry.prototype = {
       this.cubieords = cubieords ;
       this.orbitoris = orbitoris ;
       // show the orbits
-      console.log("Cubie orbit sizes " + cubieords) ;
+      console.log("# Cubie orbit sizes " + cubieords) ;
    },
    genperms: // generate permutations for moves
    function() {
@@ -979,7 +978,6 @@ PuzzleGeometry.prototype = {
                slicecnts.push(0) ;
             slicecnts[t]++ ;
          }
-         console.log("Slice counts are " + slicecnts) ;
          var axismoves = [] ;
          var axiscmoves = [] ;
          for (var sc=0; sc<slicecnts.length; sc++) {
@@ -1245,34 +1243,6 @@ PuzzleGeometry.prototype = {
          }
       }
    },
-   writess: // write a set of gens in perm format
-   function() {
-      console.log("// perms") ;
-      console.log(this.faces.length) ;
-      var totmoves = 0 ;
-      for (var k=0; k<this.moveplanesets.length; k++)
-         totmoves += this.moveplanesets[k].length ;
-      console.log(totmoves) ;
-      for (var k=0; k<this.moveplanesets.length; k++) {
-         var moveplaneset = this.moveplanesets[k] ;
-         var slices = moveplaneset.length ;
-         for (var i=0; i<=slices; i++) {
-            var perm = [] ;
-            for (var j=0; j<this.faces.length; j++)
-               perm[j] = j ;
-            var slicemoves = this.movesbyslice[k][i] ;
-            for (var j=0; j<slicemoves.length; j++) {
-               var mperm = slicemoves[j] ;
-               for (var ii=0; ii<mperm.length; ii++) {
-                  var jj = (ii + 1) % mperm.length ;
-                  perm[mperm[ii]] = mperm[jj] ;
-               }
-            }
-            perm = perm.map(function(_){return _+1}) ;
-            console.log(perm.join(" ")) ;
-         }
-      }
-   },
    getmoveperms: // get basic move perms in an array, along with orders and
                  // geometry.
    function() {
@@ -1533,19 +1503,28 @@ function schreiersims(g) {
 }
 if (typeof(process) !== 'undefined' &&
     process.argv && process.argv.length >= 3) {
+   console.log("# " + process.argv.join(" ")) ;
    var cuts = [] ;
-   for (var i=3; i<process.argv.length; i += 2)
+   for (var i=3; i+1<process.argv.length; i += 2)
       cuts.push([process.argv[i], process.argv[i+1]]) ;
    var pg = new PuzzleGeometry(process.argv[2], cuts) ;
    pg.allstickers() ;
    pg.genperms() ;
-   console.log("Stickers " + pg.stickersperface + " cubies " +
+   console.log("# Stickers " + pg.stickersperface + " cubies " +
                pg.cubies.length + " orbits " + pg.orbits +
                 " shortedge " + pg.shortedge) ;
-// var moves = pg.getcookedmoveperms() ;
-// var g = moves.map(function(m){return m[0]}) ;
-// schreiersims(g) ;
-   pg.writegap() ;
-// pg.writess() ;
-// pg.writeksolve() ;
+   if (process.argv.length % 2 == 0) {
+      var cmd = process.argv[process.argv.length-1] ;
+      if (cmd == "gap") {
+         pg.writegap() ;
+      } else if (cmd == "ksolve") {
+         pg.writeksolve() ;
+      } else if (cmd == "ss") {
+         var moves = pg.getcookedmoveperms() ;
+         var g = moves.map(function(m){return m[0]}) ;
+         schreiersims(g) ;
+      } else {
+         throw "Did not understand cmd " + cmd ;
+      }
+   }
 }
