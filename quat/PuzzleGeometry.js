@@ -904,6 +904,7 @@ PuzzleGeometry.prototype = {
          for (var j=0; j<facelisthash[key].length; j++)
             if (i==facelisthash[key][j]) {
                facetocubies.push([cubiekey[key], j]) ;
+ console.log(cubiekey[key] + " " + j) ;
                break ;
             }
       }
@@ -1122,6 +1123,7 @@ PuzzleGeometry.prototype = {
    writeksolve: // write ksolve; mirrored off original q.pl
    function() {
       var setmoves = [] ;
+      var result = [] ;
       for (var k=0; k<this.moveplanesets.length; k++) {
          var moveplaneset = this.moveplanesets[k] ;
          var slices = moveplaneset.length ;
@@ -1148,22 +1150,22 @@ PuzzleGeometry.prototype = {
       for (var i=0; i<this.cubiesetname.length; i++) {
          if (!setmoves[i])
             continue ;
-         console.log("Set " + this.cubiesetname[i] + " " + this.cubieords[i] +
+         result.push("Set " + this.cubiesetname[i] + " " + this.cubieords[i] +
                      " " + this.orbitoris[i]) ;
       }
-      console.log("") ;
-      console.log("Solved") ;
+      result.push("") ;
+      result.push("Solved") ;
       for (var i=0; i<this.cubiesetname.length; i++) {
          if (!setmoves[i])
             continue ;
-         console.log(this.cubiesetname[i]) ;
+         result.push(this.cubiesetname[i]) ;
          var p = [] ;
          for (var j=1; j<=this.cubieords[i]; j++)
             p.push(j) ;
-         console.log(p.join(" ")) ;
+         result.push(p.join(" ")) ;
       }
-      console.log("End") ;
-      console.log("") ;
+      result.push("End") ;
+      result.push("") ;
       for (var k=0; k<this.moveplanesets.length; k++) {
          var moveplaneset = this.moveplanesets[k] ;
          var slices = moveplaneset.length ;
@@ -1174,7 +1176,7 @@ PuzzleGeometry.prototype = {
             var mna = this.getmovename(movesetgeo, movebits, slices) ;
             var movename = mna[0] ;
             var inverted = mna[1] ;
-            console.log("Move " + movename) ;
+            result.push("Move " + movename) ;
             var perms = [] ;
             var oris = [] ;
             for (var ii=0; ii<this.cubiesetname.length; ii++) {
@@ -1230,18 +1232,19 @@ PuzzleGeometry.prototype = {
                      }
                if (!needed && !needori)
                   continue ;
-               console.log(this.cubiesetname[ii]) ;
+               result.push(this.cubiesetname[ii]) ;
                var r = [] ;
                for (var kk=0; kk<perms[ii].length; kk++)
                   r.push(perms[ii][kk]+1) ;
-               console.log(r.join(" ")) ;
+               result.push(r.join(" ")) ;
                if (this.orbitoris[ii] > 1 && needori)
-                  console.log(oris[ii].join(" ")) ;
+                  result.push(oris[ii].join(" ")) ;
             }
-            console.log("End") ;
-            console.log("") ;
+            result.push("End") ;
+            result.push("") ;
          }
       }
+      return result.join("\n") ;
    },
    getmoveperms: // get basic move perms in an array, along with orders and
                  // geometry.
@@ -1518,7 +1521,7 @@ if (typeof(process) !== 'undefined' &&
       if (cmd == "gap") {
          pg.writegap() ;
       } else if (cmd == "ksolve") {
-         pg.writeksolve() ;
+         console.log(pg.writeksolve()) ;
       } else if (cmd == "ss") {
          var moves = pg.getcookedmoveperms() ;
          var g = moves.map(function(m){return m[0]}) ;
