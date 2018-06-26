@@ -1123,6 +1123,7 @@ PuzzleGeometry.prototype = {
    function(name) {
       var setmoves = [] ;
       var result = [] ;
+      var movenames = [] ;
       if (!name)
          name = "CustomPuzzle" ;
       result.push("Name " + name) ;
@@ -1179,6 +1180,7 @@ PuzzleGeometry.prototype = {
             var movename = mna[0] ;
             var inverted = mna[1] ;
             result.push("Move " + movename) ;
+            movenames.push(movename) ;
             var perms = [] ;
             var oris = [] ;
             for (var ii=0; ii<this.cubiesetname.length; ii++) {
@@ -1246,6 +1248,7 @@ PuzzleGeometry.prototype = {
             result.push("") ;
          }
       }
+      this.ksolvemovenames = movenames ; // hack!
       return result.join("\n") ;
    },
    getmoveperms: // get basic move perms in an array, along with orders and
@@ -1321,6 +1324,7 @@ PuzzleGeometry.prototype = {
          "c v 0 v 0.38", "professor skewb",
          "c e 0.707106781186547", "helicopter",
          "c v 0.577350269189626", "dino",
+         "c e 0", "little chop",
          "t v 0.333333333333333 v 1.66666666666667", "pyraminx",
          "d f 0.7", "megaminx",
          "d f 0.64 f 0.82", "gigaminx",
