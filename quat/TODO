@@ -1,13 +1,112 @@
-Move mapping and other functionality into PuzzleGeometry.  Move slice
-selection and other options into PuzzleGeometry.  Make g12 as small as
-we possibly can.
+Now that we are working with Lucas, we have both a ton more
+functionality but also a ton more things that need fixing.
 
-Note that for some puzzles, like helicopter, if we permit slice turns
-than the orbits are different/larger, so really we don't want to create
-orbits as early as we currently do.  We need to pick moves before we
-create orbits, and/or recreate orbits when we change move selection.
-We also want to be able to evaluate subsets of puzzles, specifically
-corners or edges or centers separately (both gap and ksolve).
+Big picture:
+
+* Decide:  existing ksolve rep, or different one?  For now, we'll
+  use what we have (as long as it works)  Check that Gliiker does
+  the same (exactly) as ksolve, or not.  Want internal rep to
+  permit orientation "coordinate" so orientation move independent
+  of perm.  Note that ksolve move and compose are different.
+
+* How to collaborate?  I have essentially one (or maybe a few) JS
+  files; Lucas has the bulk of the code . . . whose repository,
+  etc.
+
+* Full-puzzle rotations, blocks vs slices, etc.: need some way
+  to specify and manage this (without breaking ksolve)
+
+* Big state storage (pruning tables): files vs local storage etc.
+
+Ksolve.js:
+
+* Improve "combine" to not do modulo for oris=1, oris power of 2
+
+* Fix inversion
+
+* Fix missing ori issue
+
+PuzzleGeometry:
+
+* Get internal move names to be derived from net
+
+* Move net flattening into PuzzleGeometry.
+
+* Add methods to override default net, colors, move names
+
+* SVG from the command line
+
+SVG rendering
+
+* Use simple affine transforms and radix ordering for 3D rendering
+
+* Add 3D partial move and slice rendering based on this
+
+* Consider grouping facelets so we can transform them as one face
+
+* Fix broken puzzle Starminx; handle indeterminism better
+
+* Add timeout or some such to schreier-sims
+
+Theory
+
+* Make schreier-sims generate shorter sequences
+
+* Optimal solving for simple puzzles; two-phase for bigger, three phase,
+  etc.
+
+* Coset solvers for puzzles
+
+* Subpuzzle analysis (corners-only, perms only, orient without perms, etc.)
+
+* Automatic symmetry (and antisymmetry) reduction
+
+* Check facelet colors for editing
+
+* Schreier-sims on combined subsets of pieces
+
+* Algo searches: by position order, by restricting distinct grips; search
+  for three-swaps, two-swaps, and orientation fixes
+
+* Enumerate simple puzzles
+
+UI
+
+* Use linear gradients rather than circles, that stick out from center
+  of rotation
+
+* Add randomize, reset
+
+* Highlight edges when making, about to make, a move
+
+* Separate faces (thicker outlines, or actually space them)
+
+* Add 3D/net/single face display
+
+* Option to "regularize" puzzle: same puzzle, but make smallest sticker
+  as large as possible (maybe on face edit screen)
+
+* Allow manipulation of cuts in single-face display with mouse
+
+* Allow display/elimination of negligible facelets
+
+* Add algorithm display, edit
+
+* Add face names and/or move names superimposed
+
+* Allow named algorithm macros (i.e., Sune)
+
+* Add access to schreier-sims
+
+* Fix default color on non-cubicle puzzles
+
+* Simulation UI (mouse moves) on desktop, mobile
+
+* Drag moves vs click moves; touch vs mouse+keyboard
+
+* State/sequence import/export
+
+* Facelet color editing
 
 Improve epsilon management; ensure we don't loop forever if something
 goes wrong with epsilon calculations; add too-small-face warning or
