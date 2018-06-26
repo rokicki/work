@@ -9,6 +9,9 @@ Big picture:
   permit orientation "coordinate" so orientation move independent
   of perm.  Note that ksolve move and compose are different.
 
+* Do we want to keep "old" SVGs that Lucas made by hand?  May need
+  to fix these.
+
 * How to collaborate?  I have essentially one (or maybe a few) JS
   files; Lucas has the bulk of the code . . . whose repository,
   etc.
@@ -22,7 +25,7 @@ Ksolve.js:
 
 * Improve "combine" to not do modulo for oris=1, oris power of 2
 
-* Fix inversion
+* Fix inversion (pyraminx)
 
 * Fix missing ori issue
 
@@ -36,6 +39,10 @@ PuzzleGeometry:
 
 * SVG from the command line
 
+* Fix broken puzzle Starminx; handle indeterminism better
+
+* Add timeout or some such to schreier-sims
+
 SVG rendering
 
 * Use simple affine transforms and radix ordering for 3D rendering
@@ -43,10 +50,6 @@ SVG rendering
 * Add 3D partial move and slice rendering based on this
 
 * Consider grouping facelets so we can transform them as one face
-
-* Fix broken puzzle Starminx; handle indeterminism better
-
-* Add timeout or some such to schreier-sims
 
 Theory
 
@@ -107,6 +110,10 @@ UI
 * State/sequence import/export
 
 * Facelet color editing
+
+ksolve:
+
+* Fix bugs; doesn't work with 24-cube
 
 Improve epsilon management; ensure we don't loop forever if something
 goes wrong with epsilon calculations; add too-small-face warning or
