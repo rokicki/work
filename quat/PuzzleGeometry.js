@@ -426,7 +426,7 @@ PuzzleGeometry.prototype = {
    cubieords: [],     // the size of each orbit
    cubiesetnums: [],
    cubieordnums: [],
-   oribitoris: [],    // the orientation size of each orbit
+   orbitoris: [],    // the orientation size of each orbit
    movesbyslice: [],  // move as perms by slice
    cmovesbyslice: [], // cmoves as perms by slice
 //
@@ -904,7 +904,6 @@ PuzzleGeometry.prototype = {
          for (var j=0; j<facelisthash[key].length; j++)
             if (i==facelisthash[key][j]) {
                facetocubies.push([cubiekey[key], j]) ;
- console.log(cubiekey[key] + " " + j) ;
                break ;
             }
       }
@@ -1121,9 +1120,12 @@ PuzzleGeometry.prototype = {
       return [movename, inverted] ;
    },
    writeksolve: // write ksolve; mirrored off original q.pl
-   function() {
+   function(name) {
       var setmoves = [] ;
       var result = [] ;
+      if (!name)
+         name = "CustomPuzzle" ;
+      result.push("Name " + name) ;
       for (var k=0; k<this.moveplanesets.length; k++) {
          var moveplaneset = this.moveplanesets[k] ;
          var slices = moveplaneset.length ;
@@ -1200,13 +1202,13 @@ PuzzleGeometry.prototype = {
                   for (var ii=0; ii<mperm.length; ii += 2)
                      mperm[ii] = this.cubieordnums[mperm[ii]] ;
                   var inc = 2 ;
-                  var oinc = mperm.length-1 ;
+                  var oinc = 3 ;
                   if (inverted) {
                      inc = mperm.length - 2 ;
-                     oinc = 3 ;
+                     oinc = mperm.length - 1 ;
                   }
                   for (var ii=0; ii<mperm.length; ii += 2) {
-                     perms[setnum][mperm[ii]] = mperm[(ii+inc)%mperm.length] ;
+                     perms[setnum][mperm[(ii+inc)%mperm.length]] = mperm[ii] ;
                      oris[setnum][mperm[ii]] =
                             (mperm[(ii+oinc)%mperm.length] -
                              mperm[(ii+1)%mperm.length] +
