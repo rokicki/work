@@ -491,7 +491,7 @@ PuzzleGeometry.prototype = {
    net: [],
    defaultcolors: {
 // the colors should use the same naming convention as the nets, above.
-      4: { F: '#ffffff', D: '#ff0000', L: '#00ff00', R: '#0000ff', },
+      4: { F: '#00ff00', D: '#ffff00', L: '#ff0000', R: '#0000ff', },
       6: { U: '#ffffff', F: '#00ff00', R: '#ff0000',
            D: '#ffff00', B: '#0000ff', L: '#ff8000', },
       8: { U: '#e085b9', F: '#080d99', R: '#c1e35c', D: '#22955e',

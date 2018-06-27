@@ -23,11 +23,7 @@ Big picture:
 
 Ksolve.js:
 
-* Improve "combine" to not do modulo for oris=1, oris power of 2
-
-* Fix inversion (pyraminx)
-
-* Fix missing ori issue
+* Fix missing ori issue // Lucas
 
 PuzzleGeometry:
 
