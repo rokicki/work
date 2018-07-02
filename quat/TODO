@@ -3,15 +3,6 @@ functionality but also a ton more things that need fixing.
 
 Big picture:
 
-* Decide:  existing ksolve rep, or different one?  For now, we'll
-  use what we have (as long as it works)  Check that Gliiker does
-  the same (exactly) as ksolve, or not.  Want internal rep to
-  permit orientation "coordinate" so orientation move independent
-  of perm.  Note that ksolve move and compose are different.
-
-* Do we want to keep "old" SVGs that Lucas made by hand?  May need
-  to fix these.
-
 * How to collaborate?  I have essentially one (or maybe a few) JS
   files; Lucas has the bulk of the code . . . whose repository,
   etc.
