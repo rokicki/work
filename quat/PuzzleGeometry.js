@@ -541,7 +541,8 @@ PuzzleGeometry.prototype = {
                        function(_){ return baseplane.rotateplane(_) }) ;
       this.baseplanes = baseplanes ;
       this.basefacecount = baseplanes.length ;
-      this.net = this.defaultnets[baseplanes.length] ;
+      var net = this.defaultnets[baseplanes.length] ;
+      this.net = net ;
       this.colors = this.defaultcolors[baseplanes.length] ;
       console.log("# Base planes: " + baseplanes.length) ;
       var baseface = pg.getface(baseplanes) ;
@@ -577,6 +578,7 @@ PuzzleGeometry.prototype = {
       var faceplanes = [] ;
       var vertexnames = [] ;
       var edgenames = [] ;
+      var edgesperface = faces[0].length ;
       function searchaddelement(a, p, name) {
          for (var i=0; i<a.length; i++)
             if (a[i][0].dist(p) < eps) {
@@ -587,23 +589,71 @@ PuzzleGeometry.prototype = {
       }
       for (var i=0; i<this.baseplanerot.length; i++) {
          var face = this.baseplanerot[i].rotateface(faces[0]) ;
+         for (var j=0; j<face.length; j++) {
+            var jj = (j + 1) % face.length ;
+            var midpoint = face[j].sum(face[jj]).smul(0.5) ;
+            searchaddelement(edgenames, midpoint, i) ;
+         }
+      }
+      var otherfaces = [] ;
+      for (var i=0; i<this.baseplanerot.length; i++) {
+         var face = this.baseplanerot[i].rotateface(faces[0]) ;
+         var facelist = [] ;
+         for (var j=0; j<face.length; j++) {
+            var jj = (j + 1) % face.length ;
+            var midpoint = face[j].sum(face[jj]).smul(0.5) ;
+            var el = edgenames[this.findelement(edgenames, midpoint)] ;
+            if (i == el[1])
+               facelist.push(el[2]) ;
+            else if (i == el[2]) 
+               facelist.push(el[1]) ;
+            else
+               throw "Could not find edge" ;
+         }
+         otherfaces.push(facelist) ;
+      }
+      var facenametoindex = {} ;
+      var faceindextoname = [] ;
+      faceindextoname.push(net[0][0]) ;
+      facenametoindex[net[0][0]] = 0 ;
+      faceindextoname[otherfaces[0][0]] = net[0][1] ;
+      facenametoindex[net[0][1]] = otherfaces[0][0] ;
+      for (var i=0; i<net.length; i++) {
+         var f0 = net[i][0] ;
+         var fi = facenametoindex[f0] ;
+         if (fi == undefined)
+            throw "Bad edge description; first edge not connected" ;
+         var ii = -1 ;
+         for (var j=0; j<otherfaces[fi].length; j++) {
+            var fn2 = faceindextoname[otherfaces[fi][j]] ;
+            if (fn2 != undefined && fn2 == net[i][1]) {
+               ii = j ;
+               break ;
+            }
+         }
+         if (ii < 0)
+            throw "First element of a net not known" ;
+         for (var j=2; j<net[i].length; j++) {
+            if (net[i][j] == "")
+               continue ;
+            var of = otherfaces[fi][(j+ii-1)%edgesperface] ;
+            var fn2 = faceindextoname[of] ;
+            if (fn2 != undefined && fn2 != net[i][j])
+               throw "Face mismatch in net" ;
+            faceindextoname[of] = net[i][j] ;
+            facenametoindex[net[i][j]] = of ;
+         }
+      }
+      for (var i=0; i<this.baseplanerot.length; i++) {
+         var face = this.baseplanerot[i].rotateface(faces[0]) ;
          var faceplane = boundary.rotateplane(this.baseplanerot[i]) ;
-         var facename = String.fromCharCode(65+i) ;
+         var facename = faceindextoname[i] ;
          facenames.push([face, facename]) ;
          faceplanes.push([faceplane, facename]) ;
       }
       for (var i=0; i<this.baseplanerot.length; i++) {
          var face = this.baseplanerot[i].rotateface(faces[0]) ;
-         var facename = String.fromCharCode(65+i) ;
-         for (var j=0; j<face.length; j++) {
-            var jj = (j + 1) % face.length ;
-            var midpoint = face[j].sum(face[jj]).smul(0.5) ;
-            searchaddelement(edgenames, midpoint, facename) ;
-         }
-      }
-      for (var i=0; i<this.baseplanerot.length; i++) {
-         var face = this.baseplanerot[i].rotateface(faces[0]) ;
-         var facename = String.fromCharCode(65+i) ;
+         var facename = faceindextoname[i] ;
          for (var j=0; j<face.length; j++) {
             var jj = (j + 1) % face.length ;
             var midpoint = face[j].sum(face[jj]).smul(0.5) ;
@@ -618,8 +668,8 @@ PuzzleGeometry.prototype = {
       for (var i=0; i<edgenames.length; i++) {
          if (edgenames[i].length != 3)
             throw "Bad length in edge names " + edgenames[i] ;
-         var c1 = edgenames[i][1] ;
-         var c2 = edgenames[i][2] ;
+         var c1 = faceindextoname[edgenames[i][1]] ;
+         var c2 = faceindextoname[edgenames[i][2]] ;
          if (c1 < c2)
             c1 = c1 + c2 ;
          else
