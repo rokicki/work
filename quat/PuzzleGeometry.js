@@ -1385,7 +1385,7 @@ PuzzleGeometry.prototype = {
          "d f 0.7", "megaminx",
          "d f 0.64 f 0.82", "gigaminx",
          "d f 0", "pentultimate",
-         "d v 0.937962371425399", "starminx",
+         "d v 0.93796236956", "starminx",
          "d f 0.23606797749979", "starminx 2",
          "d v 0", "dodec star",
          "o f 0", "skewb diamond",
