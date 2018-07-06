@@ -906,12 +906,11 @@ PuzzleGeometry.prototype = {
          }
          facelisthash[s].push(i) ;
          cubiehash[s].push(face) ;
-//       cubiehash[s].push(i) ;
       }
       this.cubiekey = cubiekey ;
       this.facelisthash = facelisthash ;
       console.log("# Cubies: " + Object.keys(cubiehash).length) ;
-      //  Sort the cubies around each corner so they are clockwise.  Only
+      //  Sort the faces around each corner so they are clockwise.  Only
       //  relevant for cubies that actually are corners (three or more
       //  faces).  In general cubies might have many faces; for icosohedrons
       //  there are five faces on the corner cubies.
@@ -919,15 +918,20 @@ PuzzleGeometry.prototype = {
          var cubie = cubies[k] ;
          if (cubie.length < 3)
             continue ;
+         if (cubie.length == this.basefacecount) // looks like core?  don't sort
+            continue ;
+         if (cubie.length > 5)
+            throw "Bad math; too many faces on this cubie " + cubie.length ;
          var s = this.keyface(cubie[0]) ;
          var facelist = facelisthash[s] ;
          var cm = cubie.map(
                        function(_){return Quat.prototype.centermassface(_)}) ;
          var cmall = Quat.prototype.centermassface(cm) ;
-         while (true) {
+         for (var looplimit=0; ; looplimit++) {
             var changed = false ;
             for (var i=0; i<cubie.length; i++) {
                var j = (i + 1) % cubie.length ;
+               var ttt = cmall.dot(cm[i].cross(cm[j])) ;
                if (cmall.dot(cm[i].cross(cm[j])) < 0) {
                   var t = cubie[i] ;
                   cubie[i] = cubie[j] ;
@@ -943,6 +947,8 @@ PuzzleGeometry.prototype = {
             }
             if (!changed)
                break ;
+            if (looplimit > 1000)
+               throw("Bad epsilon math; too close to border") ;
          }
       }
       this.cubies = cubies ;
