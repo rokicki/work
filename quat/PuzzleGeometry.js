@@ -982,7 +982,10 @@ PuzzleGeometry.prototype = {
          cubieords.push(0) ;
          var facecnt = cubie.length ;
          var typectr = cubietypecounts[facecnt]++ ;
-         var typename = typenames[facecnt] + (typectr == 0 ? '' : (typectr+1)) ;
+         var typename = typenames[facecnt] ;
+         if (typename == undefined || facecnt == this.basefacecount)
+            typename = "CORE" ;
+         typename = typename + (typectr == 0 ? '' : (typectr+1)) ;
          cubiesetname[cubiesetnum] = typename ;
          orbitoris[cubiesetnum] = facecnt ;
          var q = [i] ;
