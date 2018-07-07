@@ -762,7 +762,7 @@ PuzzleGeometry.prototype = {
    },
    findcubie:
    function (face) {
-      return this.cubiekey[this.keyface(face)];
+      return this.facetocubies[this.findface(face)][0] ;
    },
    findface:
    function (face) {
@@ -906,6 +906,21 @@ PuzzleGeometry.prototype = {
          }
          facelisthash[s].push(i) ;
          cubiehash[s].push(face) ;
+         //  If we find a core cubie, split it up into multiple cubies,
+         //  because ksolve doesn't handle orientations that are not
+         //  cyclic, and the rotation group of the core is not cyclic.
+         if (facelisthash[s].length == this.basefacecount) {
+            for (var suff=0; suff<this.basefacecount; suff++) {
+               var s2 = s + " " + suff ;
+               facelisthash[s2] = [facelisthash[s][suff]] ;
+               cubiehash[s2] = [cubiehash[s][suff]] ;
+               cubiekeys.push(s2) ;
+               cubiekey[s2] = cubies.length ;
+               cubies.push(cubiehash[s2]) ;
+            }
+            cubiehash[s] = [] ;
+            cubies[cubiekey[s]] = [] ;
+         }
       }
       this.cubiekey = cubiekey ;
       this.facelisthash = facelisthash ;
@@ -955,13 +970,11 @@ PuzzleGeometry.prototype = {
       //  Build an array that takes each face to a cubie ordinal and a
       //  face number.
       var facetocubies = [] ;
-      for (var i=0; i<faces.length; i++) {
-         var key = this.keyface(faces[i]) ;
-         for (var j=0; j<facelisthash[key].length; j++)
-            if (i==facelisthash[key][j]) {
-               facetocubies.push([cubiekey[key], j]) ;
-               break ;
-            }
+      for (var i=0; i<cubies.length; i++) {
+         var facelist = facelisthash[cubiekeys[i]] ;
+         for (var j=0; j<facelist.length; j++) {
+            facetocubies[facelist[j]] = [i, j] ;
+         }
       }
       this.facetocubies = facetocubies ;
       //  Calculate the orbits of each cubie.
@@ -979,6 +992,8 @@ PuzzleGeometry.prototype = {
          if (seen[i])
             continue ;
          var cubie = cubies[i] ;
+         if (cubie.length == 0)
+            continue ;
          cubieords.push(0) ;
          var facecnt = cubie.length ;
          var typectr = cubietypecounts[facecnt]++ ;
