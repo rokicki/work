@@ -18,8 +18,6 @@ PuzzleGeometry:
 
 * SVG from the command line ??
 
-* Fix broken puzzle Starminx; handle indeterminism better
-
 * Add timeout or some such to schreier-sims
 
 SVG rendering
@@ -49,8 +47,6 @@ Theory
 
 * Algo searches: by position order, by restricting distinct grips; search
   for three-swaps, two-swaps, and orientation fixes
-
-* Enumerate simple puzzles
 
 UI
 
