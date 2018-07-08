@@ -12,7 +12,7 @@ Ksolve.js:
 
 * Write ksolve->ksolve simplification code
 
-* KSolve solved needs to show colors, not numbers
+* Fix rendering in the case of identical pieces.
 
 PuzzleGeometry:
 
