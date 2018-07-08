@@ -1601,13 +1601,26 @@ function schreiersims(g) {
 if (typeof(process) !== 'undefined' &&
     process.argv && process.argv.length >= 3) {
    console.log("# " + process.argv.join(" ")) ;
-   var cuts = [] ;
+   var desc = undefined ;
+   var puzzleList = PuzzleGeometry.prototype.getpuzzles() ;
+   for (var i=0; i<puzzleList.length; i += 2)
+      if (puzzleList[i+1] == process.argv[2]) {
+         desc = puzzleList[i] ;
+         break ;
+      }
+   var createargs = [] ;
    var argp = 3 ;
-   while (argp+1<process.argv.length && process.argv[argp].length == 1) {
-      cuts.push([process.argv[argp], process.argv[argp+1]]) ;
-      argp += 2 ;
+   if (desc != undefined) {
+      createargs = PuzzleGeometry.prototype.parsedesc(desc) ;
+   } else {
+      var cuts = [] ;
+      while (argp+1<process.argv.length && process.argv[argp].length == 1) {
+         cuts.push([process.argv[argp], process.argv[argp+1]]) ;
+         argp += 2 ;
+      }
+      createargs = [process.argv[2], cuts] ;
    }
-   var pg = new PuzzleGeometry(process.argv[2], cuts) ;
+   var pg = new PuzzleGeometry(createargs[0], createargs[1]) ;
    pg.allstickers() ;
    pg.genperms() ;
    console.log("# Stickers " + pg.stickersperface + " cubies " +
