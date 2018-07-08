@@ -14,6 +14,10 @@ Ksolve.js:
 
 * Fix rendering in the case of identical pieces.
 
+* Make sure that few-color (i.e., 3-color) cube works, even with
+  random orientations; does mixing identical pieces and orientations
+  break us?
+
 PuzzleGeometry:
 
 * Find puzzles by name
