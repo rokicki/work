@@ -1242,7 +1242,10 @@ PuzzleGeometry.prototype = {
          result.push(this.cubiesetname[i]) ;
          var p = [] ;
          for (var j=1; j<=this.cubieords[i]; j++)
-            p.push(j) ;
+            if (this.orbitoris[i] > 1)
+               p.push(j) ;
+            else
+               p.push(1+Math.floor((j-1)/(this.cubieords[i]/this.basefacecount))) ;
          result.push(p.join(" ")) ;
       }
       result.push("End") ;
