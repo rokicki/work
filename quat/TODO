@@ -10,7 +10,11 @@ Ksolve.js:
 
 * Fix missing ori issue // Lucas
 
+* Write ksolve->ksolve simplification code
+
 PuzzleGeometry:
+
+* Find puzzles by name
 
 * Move net flattening into PuzzleGeometry.
 
