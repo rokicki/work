@@ -10,9 +10,9 @@ Ksolve.js:
 
 * Fix missing ori issue // Lucas
 
-* Write ksolve->ksolve simplification code
+* Fix identical color rendering issue // Lucas
 
-* Fix rendering in the case of identical pieces.
+* Write ksolve->ksolve simplification code
 
 * Make sure that few-color (i.e., 3-color) cube works, even with
   random orientations; does mixing identical pieces and orientations
@@ -20,13 +20,7 @@ Ksolve.js:
 
 PuzzleGeometry:
 
-* Find puzzles by name
-
-* Move net flattening into PuzzleGeometry.
-
 * Add methods to override default net, colors, move names
-
-* SVG from the command line ??
 
 * Add timeout or some such to schreier-sims
 
