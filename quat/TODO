@@ -40,6 +40,10 @@ SVG rendering
 
 Theory
 
+* Generalized canonical sequences
+
+* Generalized symmetry and symmetry^2 reductions
+
 * Make schreier-sims generate shorter sequences
 
 * Optimal solving for simple puzzles; two-phase for bigger, three phase,
@@ -48,8 +52,6 @@ Theory
 * Coset solvers for puzzles
 
 * Subpuzzle analysis (corners-only, perms only, orient without perms, etc.)
-
-* Automatic symmetry (and antisymmetry) reduction
 
 * Check facelet colors for editing
 

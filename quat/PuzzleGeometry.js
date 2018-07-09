@@ -1448,6 +1448,178 @@ PuzzleGeometry.prototype = {
       }
       return [a[0], r] ;
    },
+   generatesvg: // generate svg to interoperate with Lucas twistysim
+   function(w, h, trim) {
+      if (w == undefined || h == undefined) {
+         w = 800 ;
+         h = 500 ;
+      }
+      if (trim == undefined)
+         trim = 10 ;
+      w -= 2 * trim ;
+      h -= 2 * trim ;
+      function extendedges(a, polyn) {
+         var dx = a[1][0] - a[0][0] ;
+         var dy = a[1][1] - a[0][1] ;
+         var ang = 2*Math.PI/polyn ;
+         var cosa = Math.cos(ang) ;
+         var sina = Math.sin(ang) ;
+         for (var i=2; i<polyn; i++) {
+            var ndx = dx * cosa + dy * sina ;
+            dy = dy * cosa - dx * sina ;
+            dx = ndx ;
+            a.push([a[i-1][0]+dx, a[i-1][1]+dy]) ;
+         }
+      }
+      function drawedges(id, pts, color) {
+         return "<polygon id=\"" + id + "\" class=\"sticker\" style=\"fill: " + color +
+            "\" points=\"" +
+            pts.map(function(p){return p[0] + " " + p[1]}).join(" ") +
+            "\"/>\n" ;
+      }
+      // Find a net from a given face count.  Walk it, assuming we locate
+      // the first edge from (0,0) to (1,1) and compute the minimum and
+      // maximum vertex locations from this.  Then do a second walk, and
+      // assign the actual geometry.
+      this.genperms() ;
+      var boundarygeo = this.getboundarygeometry() ;
+      var face0 = boundarygeo.facenames[0][0] ;
+      var polyn = face0.length ; // number of vertices; 3, 4, or 5
+      var net = this.net ;
+      if (net == null)
+         throw "No net?" ;
+      var polyn = net[0].length - 1 ;
+      var edges = {} ;
+      var minx = 0 ;
+      var miny = 0 ;
+      var maxx = 1 ;
+      var maxy = 0 ;
+      edges[net[0][0]] = [[1, 0], [0, 0]] ;
+      extendedges(edges[net[0][0]], polyn) ;
+      for (var i=0; i<net.length; i++) {
+         var f0 = net[i][0] ;
+         if (!edges[f0]) {
+            alert("Bad edge description; first edge not connected.") ;
+            return ;
+         }
+         for (var j=1; j<net[i].length; j++) {
+            var f1 = net[i][j] ;
+            if (f1 == "" || edges[f1])
+               continue ;
+            edges[f1] = [edges[f0][j%polyn], edges[f0][(j+polyn-1)%polyn]] ;
+            extendedges(edges[f1], polyn) ;
+         }
+      }
+      for (var f0 in edges) {
+         var es = edges[f0] ;
+         for (var i=0; i<es.length; i++) {
+            minx = Math.min(minx, es[i][0]) ;
+            maxx = Math.max(maxx, es[i][0]) ;
+            miny = Math.min(miny, es[i][1]) ;
+            maxy = Math.max(maxy, es[i][1]) ;
+         }
+      }
+      var sc = Math.min(w/(maxx-minx), h/(maxy-miny)) ;
+      var xoff = 0.5*(w-sc*(maxx+minx)) ;
+      var yoff = 0.5*(h-sc*(maxy+miny)) ;
+      var geos = {} ;
+      var bg = pg.getboundarygeometry() ;
+      var edges2 = {} ;
+      var initv = [[sc+xoff, yoff], [xoff, yoff]] ;
+      edges2[net[0][0]] = initv ;
+      extendedges(edges2[net[0][0]], polyn) ;
+      geos[bg.facenames[0][1]] = pg.project2d(0, 0,
+                    [Quat(0, initv[0][0], initv[0][1], 0),
+                     Quat(0, initv[1][0], initv[1][1], 0)]) ;
+      var connectat = [] ;
+      connectat[0] = 0 ;
+      for (var i=0; i<net.length; i++) {
+         var f0 = net[i][0] ;
+         if (!edges2[f0]) {
+            alert("Bad edge description; first edge not connected.") ;
+            return ;
+         }
+         var gfi = -1 ;
+         for (var j=0; j<bg.facenames.length; j++)
+            if (f0 == bg.facenames[j][1]) {
+               gfi = j ;
+               break ;
+            }
+         if (gfi < 0) {
+            alert("Could not find first face name " + f0) ;
+            return 0 ;
+         }
+         var thisface = bg.facenames[gfi][0] ;
+         for (var j=1; j<net[i].length; j++) {
+            var f1 = net[i][j] ;
+            if (f1 == "" || edges2[f1])
+               continue ;
+            edges2[f1] = [edges2[f0][j%polyn], edges2[f0][(j+polyn-1)%polyn]] ;
+            extendedges(edges2[f1], polyn) ;
+            // what edge are we at?
+            var caf0 = connectat[gfi] ;
+            var mp = thisface[(caf0+j)%polyn].sum(thisface[(caf0+j+polyn-1)%polyn]).smul(0.5) ;
+            var epi = pg.findelement(bg.edgenames, mp) ;
+            var edgename = bg.edgenames[epi][1] ;
+            var gf1 = edgename[(f0 == edgename[0]) ? 1 : 0] ;
+            var gf1i = -1 ;
+            for (var k=0; k<bg.facenames.length; k++) {
+               if (gf1 == bg.facenames[k][1]) {
+                  gf1i = k ;
+                  break ;
+               }
+            }
+            if (gf1i < 0) {
+               alert("Could not find second face name") ;
+               return 0 ;
+            }
+            var otherface = bg.facenames[gf1i][0] ;
+            for (var k=0; k<otherface.length; k++) {
+               var mp2 = otherface[k].sum(otherface[(k+1)%polyn]).smul(0.5) ;
+               if (mp2.dist(mp) <= eps) {
+                  var p1 = edges2[f0][(j+polyn-1)%polyn] ;
+                  var p2 = edges2[f0][j % polyn] ;
+                  connectat[gf1i] = k ;
+                  geos[gf1] = pg.project2d(gf1i, k,
+                          [Quat(0, p2[0], p2[1], 0), Quat(0, p1[0], p1[1], 0)]) ;
+                  break ;
+               }
+            }
+         }
+      }
+      // Let's build arrays for faster rendering.  We want to map from geo
+      // base face number to color, and we want to map from geo face number
+      // to 2D geometry.  These can be reused as long as the puzzle overall
+      // orientation and canvas size remains unchanged.
+      var pos = pg.getsolved() ;
+      var colormap = [] ;
+      var facegeo = [] ;
+      for (var i=0; i<pg.basefacecount; i++)
+         colormap[i] = pg.colors[pg.facenames[i][1]] ;
+      for (var i=0; i<pg.faces.length; i++) {
+         var face = pg.faces[i] ;
+         var facenum = Math.floor(i/pg.stickersperface) ;
+         var g = geos[pg.facenames[facenum][1]] ;
+         var face2 = face.map(function(p){
+                          return [trim+p.dot(g[0])+g[2].b, trim+h-p.dot(g[1])-g[2].c] ; }) ;
+         facegeo.push(face2) ;
+      }
+      var svg = [] ;
+      for (var i=0; i<pg.faces.length; i++) {
+         var cubie = pg.facetocubies[i][0] ;
+         var cubieori = pg.facetocubies[i][1] ;
+         var cubiesetnum = pg.cubiesetnums[cubie] ;
+         var cubieord = pg.cubieordnums[cubie] ;
+         var id = pg.cubiesetname[cubiesetnum] + "-l" + cubieord + "-o" + cubieori ;
+         svg.push(drawedges(id, facegeo[i], colormap[pos.p[i]])) ;
+      }
+      var html = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 800 500">' +
+      '<style type="text/css"><![CDATA[' +
+      '.sticker { stroke: #000000; stroke-width: 1px; }' +
+      ']]></style>' +
+      svg.join('') + "</svg>" ;
+      return html ;
+   },
 } ;
 function Perm(p_) {
    if (this instanceof Perm) {
@@ -1637,6 +1809,8 @@ if (typeof(process) !== 'undefined' &&
          pg.writegap() ;
       } else if (cmd == "ksolve") {
          console.log(pg.writeksolve()) ;
+      } else if (cmd == "svg") {
+         console.log(pg.generatesvg()) ;
       } else if (cmd == "ss") {
          var moves = pg.getcookedmoveperms() ;
          var g = moves.map(function(m){return m[0]}) ;
