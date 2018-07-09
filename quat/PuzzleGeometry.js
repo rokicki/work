@@ -296,15 +296,15 @@ PlatonicGenerator.prototype = {
          for (var j=0; j<g.length; j++) {
             var ns = g[j].mul(q[i]) ;
             var negns = ns.smul(-1) ;
-            var seen = false ;
+            var wasseen = false ;
             for (var k=0; k<q.length; k++) {
                if (ns.dist(q[k]) < eps ||
                    negns.dist(q[k]) < eps) {
-                  seen = true ;
+                  wasseen = true ;
                   break ;
                }
             }
-            if (!seen) {
+            if (!wasseen) {
                q.push(ns) ;
             }
          }
@@ -319,14 +319,14 @@ PlatonicGenerator.prototype = {
       var planerot = [] ;
       for (var i=0; i<g.length; i++) {
          var p2 = p.rotateplane(g[i]) ;
-         var seen = false ;
+         var wasseen = false ;
          for (var j=0; j<planes.length; j++) {
             if (p2.dist(planes[j]) < eps) {
-               seen = true ;
+               wasseen = true ;
                break ;
             }
          }
-         if (!seen) {
+         if (!wasseen) {
             planes.push(p2) ;
             planerot.push(g[i]) ;
          }
@@ -344,16 +344,15 @@ PlatonicGenerator.prototype = {
          for (var j=i+1; j<planes.length; j++) {
             var p = planes[0].solvethreeplanes(0, i, j, planes) ;
             if (p) {
-               var seen = false ;
+               var wasseen = false ;
                for (var k=0; k<face.length; k++) {
                   if (p.dist(face[k]) < eps) {
-                     seen = true ;
+                     wasseen = true ;
                      break ;
                   }
                }
-               if (!seen) {
+               if (!wasseen)
                   face.push(p) ;
-               }
             }
          }
       }
@@ -409,7 +408,6 @@ PuzzleGeometry.prototype = {
    moveplanesets: [], // the move planes, in parallel sets
    movesetorders: [], // the order of rotations for each move set
    movesetgeo: [],    // geometric feature information for move sets
-   movesetgeo: [],    // the geometrical features for these move planes
    faces: [],         // all the stickers
    basefacecount: 0,  // number of base faces
    stickersperface: 0,// number of stickers per face
@@ -719,14 +717,14 @@ PuzzleGeometry.prototype = {
       for (var c=0; c<cutplanes.length; c++) {
          for (var i=0; i<this.rotations.length; i++) {
             var q = cutplanes[c].rotateplane(this.rotations[i]) ;
-            var seen = false ;
+            var wasseen = false ;
             for (var j=0; j<this.moveplanes.length; j++) {
                if (q.sameplane(this.moveplanes[j])) {
-                  seen = true ;
+                  wasseen = true ;
                   break ;
                }
             }
-            if (!seen) {
+            if (!wasseen) {
                this.moveplanes.push(q) ;
                faces = q.cutfaces(faces) ;
             }
@@ -810,17 +808,17 @@ PuzzleGeometry.prototype = {
       // Split moveplanes into a list of parallel planes.
       var moveplanesets = [] ;
       for (var i=0; i<this.moveplanes.length; i++) {
-         var seen = false ;
+         var wasseen = false ;
          var q = this.moveplanes[i] ;
          var qnormal = q.makenormal() ;
          for (var j=0; j<moveplanesets.length; j++) {
             if (qnormal.sameplane(moveplanesets[j][0].makenormal())) {
                moveplanesets[j].push(q) ;
-               seen = true ;
+               wasseen = true ;
                break ;
             }
          }
-         if (!seen)
+         if (!wasseen)
             moveplanesets.push([q]) ;
       }
       // make the normals all face the same way in each set.
@@ -1007,19 +1005,19 @@ PuzzleGeometry.prototype = {
          typename = typename + (typectr == 0 ? '' : (typectr+1)) ;
          cubiesetname[cubiesetnum] = typename ;
          orbitoris[cubiesetnum] = facecnt ;
-         var q = [i] ;
+         var queue = [i] ;
          var qg = 0 ;
          seen[i] = true ;
-         while (qg < q.length) {
-            var s = q[qg++] ;
-            cubiesetnums[s] = cubiesetnum ;
-            cubieordnums[s] = cubieords[cubiesetnum]++ ;
+         while (qg < queue.length) {
+            var cind = queue[qg++] ;
+            cubiesetnums[cind] = cubiesetnum ;
+            cubieordnums[cind] = cubieords[cubiesetnum]++ ;
             for (var j=0; j<moverotations.length; j++)
                for (var k=0; k<moverotations[j].length; k++) {
                   var tq = 
-                  this.findcubie(moverotations[j][k].rotateface(cubies[s][0])) ;
+                  this.findcubie(moverotations[j][k].rotateface(cubies[cind][0])) ;
                   if (!seen[tq]) {
-                     q.push(tq) ;
+                     queue.push(tq) ;
                      seen[tq] = true ;
                   }
                }
@@ -1458,13 +1456,13 @@ PuzzleGeometry.prototype = {
          trim = 10 ;
       w -= 2 * trim ;
       h -= 2 * trim ;
-      function extendedges(a, polyn) {
+      function extendedges(a, n) {
          var dx = a[1][0] - a[0][0] ;
          var dy = a[1][1] - a[0][1] ;
-         var ang = 2*Math.PI/polyn ;
+         var ang = 2*Math.PI/n ;
          var cosa = Math.cos(ang) ;
          var sina = Math.sin(ang) ;
-         for (var i=2; i<polyn; i++) {
+         for (var i=2; i<n; i++) {
             var ndx = dx * cosa + dy * sina ;
             dy = dy * cosa - dx * sina ;
             dx = ndx ;
@@ -1488,7 +1486,6 @@ PuzzleGeometry.prototype = {
       var net = this.net ;
       if (net == null)
          throw "No net?" ;
-      var polyn = net[0].length - 1 ;
       var edges = {} ;
       var minx = 0 ;
       var miny = 0 ;
@@ -1510,8 +1507,8 @@ PuzzleGeometry.prototype = {
             extendedges(edges[f1], polyn) ;
          }
       }
-      for (var f0 in edges) {
-         var es = edges[f0] ;
+      for (var f in edges) {
+         var es = edges[f] ;
          for (var i=0; i<es.length; i++) {
             minx = Math.min(minx, es[i][0]) ;
             maxx = Math.max(maxx, es[i][0]) ;
