@@ -1198,7 +1198,7 @@ PuzzleGeometry.prototype = {
       return [movename, inverted] ;
    },
    writeksolve: // write ksolve; mirrored off original q.pl
-   function(name) {
+   function(name, fortwisty) {
       var setmoves = [] ;
       var result = [] ;
       var movenames = [] ;
@@ -1242,7 +1242,7 @@ PuzzleGeometry.prototype = {
          result.push(this.cubiesetname[i]) ;
          var p = [] ;
          for (var j=1; j<=this.cubieords[i]; j++)
-            if (this.orbitoris[i] > 1)
+            if (fortwisty || this.orbitoris[i] > 1)
                p.push(j) ;
             else
                p.push(1+Math.floor((j-1)/(this.cubieords[i]/this.basefacecount))) ;
@@ -1308,7 +1308,7 @@ PuzzleGeometry.prototype = {
                      needed = true ;
                      break ;
                   }
-               var needori = false ;
+               var needori = fortwisty ;
                if (this.orbitoris[ii] > 1)
                   for (var kk=0; kk<oris[ii].length; kk++)
                      if (oris[ii][kk] != 0) {
