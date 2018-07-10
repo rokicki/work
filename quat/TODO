@@ -1,10 +1,39 @@
-Now that we are working with Lucas, we have both a ton more
-functionality but also a ton more things that need fixing.
+Intended command-line usage:
 
-Big picture:
+Pick slices:
+   --all           -- all (slice) moves, for a UI, including centers
+   --outerblock    -- outer block turn moves only
+   --vertex        -- vertex moves only (for tetrahedron)
+   --moves U,R,F   -- see below; pick specific moves
+Eliminate moves:
+   --nocorners     -- kill any corner sets
+   --noedges       -- kill any edge sets
+   --nocenters     -- kill any center sets
+   --fixcorner     -- fix the first corner
+   --fixcorners    -- fix all corners
+   --fixedge       -- fix the first edge
+   --fixcenter     -- fix the first center
+   --fixcenters    -- fix all centers
 
-* Full-puzzle rotations, blocks vs slices, etc.: need some way
-  to specify and manage this (without breaking ksolve)
+   doksolve: false,   // generate ksolve
+   dosvg: false,      // generate svg
+   dogap: false,      // generate gap
+   verbose: 1,        // verbosity (console.log)
+   allmoves: false,   // generate all slice moves in ksolve
+   outerblockmoves: false, // generate outer block moves
+   vertexmoves: false, // generate vertex moves
+   movelist: undef,   // move list to generate
+
+
+Then for move selection we want to be able to do the following types
+of things:
+
+   --moves U,R,F           -- only include U, R, and F face moves
+   --moves URB,ULF,DRF,DLB -- only include one tetrad of moves
+   --moves U2,R            -- include only U2 and R
+   --moves U2,F2,R2,D2,B2,L2 -- include only square moves (but all square moves)
+
+so just be explicit in move list.
 
 Ksolve.js:
 
@@ -19,6 +48,14 @@ Ksolve.js:
   break us?
 
 PuzzleGeometry:
+
+* Limit moves option; applies to gap, ksolve, ss.  This should be
+  general enough that the moves we list are synthesized as needed,
+  and should support outer block moves, slice moves, as well as
+  vertex/face/edge names based on the given net.  It should also
+  support suffixes (so U2 means just double-spins of U).
+
+* Limit pieces option.  For now just use corners, edges, centers.
 
 * Add methods to override default net, colors, move names
 
