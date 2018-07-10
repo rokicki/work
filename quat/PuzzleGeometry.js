@@ -453,11 +453,13 @@ PuzzleGeometry.prototype = {
    moverotations: [], // move rotations
    cubiekey: {},      // cubie locator
    facelisthash: {},  // face list by key
-   cubiesetname: [],  // cubie set names
+   cubiesetnames: [],  // cubie set names
    cubieords: [],     // the size of each orbit
    cubiesetnums: [],
    cubieordnums: [],
    orbitoris: [],    // the orientation size of each orbit
+   cubievaluemap: [], // the map for identical cubies
+   cubiesetcubies: [], // cubies in each cubie set
    movesbyslice: [],  // move as perms by slice
    cmovesbyslice: [], // cmoves as perms by slice
 // options
@@ -1011,6 +1013,26 @@ PuzzleGeometry.prototype = {
                throw("Bad epsilon math; too close to border") ;
          }
       }
+      // make the first face of each cubie be the least.
+      for (var k=0; k<cubies.length; k++) {
+         var cubie = cubies[k] ;
+         if (cubie.length < 2)
+            continue ;
+         var mini = 0 ;
+         var minf = this.findface(cubie[mini]) ;
+         for (var i=1; i<cubie.length; i++) {
+            var t = this.findface(cubie[i]) ;
+            if (t < minf) {
+               mini = i ;
+               minf = t ;
+            }
+         }
+         if (mini != 0) {
+            var ocubie = cubie.slice() ;
+            for (var i=0; i<cubie.length; i++)
+               cubie[i] = ocubie[(mini+i)%cubie.length] ;
+         }
+      }
       this.cubies = cubies ;
       //  Build an array that takes each face to a cubie ordinal and a
       //  face number.
@@ -1023,10 +1045,9 @@ PuzzleGeometry.prototype = {
       }
       this.facetocubies = facetocubies ;
       //  Calculate the orbits of each cubie.  Assumes we do all moves.
-      //  If we limit moves, this is more restricted.  But we need some
-      //  reasonable way to say how we limit the moves.
+      //  Also calculates which cubies are identical.
       var typenames = ['?', 'CENTER', 'EDGE', 'CORNER', 'C4RNER', 'C5RNER'] ;
-      var cubiesetname = [] ;
+      var cubiesetnames = [] ;
       var cubietypecounts = [0, 0, 0, 0, 0, 0] ;
       var orbitoris = [] ;
       var seen = [] ;
@@ -1035,27 +1056,45 @@ PuzzleGeometry.prototype = {
       var cubieordnums = [] ;
       var cubieords = [] ;
       var cubiesetnumhash = {} ;
+      var cubievaluemap = [] ;
+      var that = this ;
+      // Later we will make this smarter to use a get color for face function
+      // so we support puzzles with multiple faces the same color
+      function getcolorkey(cubienum) {
+         var divid = that.stickersperface ;
+         return cubies[cubienum].map(
+            function(_){return Math.floor(that.findface(_)/divid)}).join(" ") ;
+      }
+      var cubiesetcubies = [] ;
       for (var i=0; i<cubies.length; i++) {
          if (seen[i])
             continue ;
          var cubie = cubies[i] ;
          if (cubie.length == 0)
             continue ;
+         var cubiekeymap = {} ;
+         var cubievalueid = 0 ;
          cubieords.push(0) ;
+         cubiesetcubies.push([]) ;
          var facecnt = cubie.length ;
          var typectr = cubietypecounts[facecnt]++ ;
          var typename = typenames[facecnt] ;
          if (typename == undefined || facecnt == this.basefacecount)
             typename = "CORE" ;
          typename = typename + (typectr == 0 ? '' : (typectr+1)) ;
-         cubiesetname[cubiesetnum] = typename ;
+         cubiesetnames[cubiesetnum] = typename ;
          orbitoris[cubiesetnum] = facecnt ;
          var queue = [i] ;
          var qg = 0 ;
          seen[i] = true ;
          while (qg < queue.length) {
             var cind = queue[qg++] ;
+            var cubiecolorkey = getcolorkey(cind) ;
+            if (cubiekeymap[cubiecolorkey] == undefined)
+               cubiekeymap[cubiecolorkey] = cubievalueid++ ;
+            cubievaluemap[cind] = cubiekeymap[cubiecolorkey] ;
             cubiesetnums[cind] = cubiesetnum ;
+            cubiesetcubies[cubiesetnum].push(cind) ;
             cubieordnums[cind] = cubieords[cubiesetnum]++ ;
             for (var j=0; j<moverotations.length; j++)
                for (var k=0; k<moverotations[j].length; k++) {
@@ -1072,9 +1111,11 @@ PuzzleGeometry.prototype = {
       this.orbits = cubieords.length ;
       this.cubiesetnums = cubiesetnums ;
       this.cubieordnums = cubieordnums ;
-      this.cubiesetname = cubiesetname ;
+      this.cubiesetnames = cubiesetnames ;
       this.cubieords = cubieords ;
       this.orbitoris = orbitoris ;
+      this.cubievaluemap = cubievaluemap ;
+      this.cubiesetcubies = cubiesetcubies ;
       // show the orbits
       if (this.verbose) console.log("# Cubie orbit sizes " + cubieords) ;
    },
@@ -1112,10 +1153,7 @@ PuzzleGeometry.prototype = {
                if (slicenum[i] != sc)
                   continue ;
                var a = [i] ;
-               var b = this.facetocubies[i] ;
-               var cubie = b[0] ;
-               var ori = b[1] ;
-               b = [cubie, ori] ; // new array
+               var b = this.facetocubies[i].slice() ;
                var face = this.faces[i] ;
                var fi2 = i ;
                while (true) {
@@ -1128,8 +1166,7 @@ PuzzleGeometry.prototype = {
                      throw "Bad movement?" ;
                   a.push(fi2) ;
                   var c = this.facetocubies[fi2] ;
-                  b.push(c[0]) ;
-                  b.push(c[1]) ;
+                  b.push(c[0], c[1]) ;
                   face = face2 ;
                }
                if (a.length > 1)
@@ -1327,24 +1364,26 @@ PuzzleGeometry.prototype = {
             }
          }
       }
-      for (var i=0; i<this.cubiesetname.length; i++) {
+      for (var i=0; i<this.cubiesetnames.length; i++) {
          if (!setmoves[i])
             continue ;
-         result.push("Set " + this.cubiesetname[i] + " " + this.cubieords[i] +
+         result.push("Set " + this.cubiesetnames[i] + " " + this.cubieords[i] +
                      " " + this.orbitoris[i]) ;
       }
       result.push("") ;
       result.push("Solved") ;
-      for (var i=0; i<this.cubiesetname.length; i++) {
+      for (var i=0; i<this.cubiesetnames.length; i++) {
          if (!setmoves[i])
             continue ;
-         result.push(this.cubiesetname[i]) ;
+         result.push(this.cubiesetnames[i]) ;
          var p = [] ;
          for (var j=1; j<=this.cubieords[i]; j++)
-            if (fortwisty || this.orbitoris[i] > 1)
+            if (fortwisty)
                p.push(j) ;
-            else
-               p.push(1+Math.floor((j-1)/(this.cubieords[i]/this.basefacecount))) ;
+            else {
+               var cubie = this.cubiesetcubies[i][j-1] ;
+               p.push(1+this.cubievaluemap[cubie]) ;
+            }
          result.push(p.join(" ")) ;
       }
       result.push("End") ;
@@ -1364,7 +1403,7 @@ PuzzleGeometry.prototype = {
             movenames.push(movename) ;
             var perms = [] ;
             var oris = [] ;
-            for (var ii=0; ii<this.cubiesetname.length; ii++) {
+            for (var ii=0; ii<this.cubiesetnames.length; ii++) {
                var p = [] ;
                for (var kk=0; kk<this.cubieords[ii]; kk++)
                   p.push(kk) ;
@@ -1399,7 +1438,7 @@ PuzzleGeometry.prototype = {
                   }
                }
             }
-            for (var ii=0; ii<this.cubiesetname.length; ii++) {
+            for (var ii=0; ii<this.cubiesetnames.length; ii++) {
                if (!setmoves[ii])
                   continue ;
                var needed = false ;
@@ -1417,7 +1456,7 @@ PuzzleGeometry.prototype = {
                      }
                if (!needed && !needori)
                   continue ;
-               movedat.push(this.cubiesetname[ii]) ;
+               movedat.push(this.cubiesetnames[ii]) ;
                var r = [] ;
                for (var kk=0; kk<perms[ii].length; kk++)
                   r.push(perms[ii][kk]+1) ;
@@ -1713,7 +1752,7 @@ PuzzleGeometry.prototype = {
          var cubieori = pg.facetocubies[i][1] ;
          var cubiesetnum = pg.cubiesetnums[cubie] ;
          var cubieord = pg.cubieordnums[cubie] ;
-         var id = pg.cubiesetname[cubiesetnum] + "-l" + cubieord + "-o" + cubieori ;
+         var id = pg.cubiesetnames[cubiesetnum] + "-l" + cubieord + "-o" + cubieori ;
          svg.push(drawedges(id, facegeo[i], colormap[pos.p[i]])) ;
       }
       var html = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 800 500">' +
