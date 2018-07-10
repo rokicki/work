@@ -1488,6 +1488,8 @@ PuzzleGeometry.prototype = {
                perm[j] = j ;
             var slicemoves = this.movesbyslice[k][i] ;
             for (var j=0; j<slicemoves.length; j++) {
+               if (this.skipset(slicemoves[j]))
+                  continue ;
                var mperm = slicemoves[j] ;
                for (var ii=0; ii<mperm.length; ii++) {
                   var jj = (ii + 1) % mperm.length ;
