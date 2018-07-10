@@ -15,10 +15,6 @@ Eliminate moves:
    --fixcenter     -- fix the first center
    --fixcenters    -- fix all centers
 
-   doksolve: false,   // generate ksolve
-   dosvg: false,      // generate svg
-   dogap: false,      // generate gap
-   verbose: 1,        // verbosity (console.log)
    allmoves: false,   // generate all slice moves in ksolve
    outerblockmoves: false, // generate outer block moves
    vertexmoves: false, // generate vertex moves

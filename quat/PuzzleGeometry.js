@@ -411,6 +411,10 @@ function PuzzleGeometry(shape, cuts, optionlist) {
             this.dogap = optionlist[i+1] ;
          else if (optionlist[i] == "allmoves")
             this.allmoves = optionlist[i+1] ;
+         else if (optionlist[i] == "outerblockmoves")
+            this.outerblockmoves = optionlist[i+1] ;
+         else if (optionlist[i] == "vertexmoves")
+            this.vertexmoves = optionlist[i+1] ;
          else
             throw "Bad option while processing option list " + optionlist[i] ;
       }
@@ -1012,7 +1016,6 @@ PuzzleGeometry.prototype = {
       //  Calculate the orbits of each cubie.  Assumes we do all moves.
       //  If we limit moves, this is more restricted.  But we need some
       //  reasonable way to say how we limit the moves.
-      //  <><>
       var typenames = ['?', 'CENTER', 'EDGE', 'CORNER', 'C4RNER', 'C5RNER'] ;
       var cubiesetname = [] ;
       var cubietypecounts = [0, 0, 0, 0, 0, 0] ;
@@ -1161,7 +1164,13 @@ PuzzleGeometry.prototype = {
       for (var i=0; i<=slices; i++) {
          if (!this.allmoves && i + i == slices)
             continue ;
-         r.push(1<<i) ;
+         if (this.outerblockmoves) {
+            if (i + i > slices)
+               r.push((2 << slices) - (1 << i)) ;
+            else
+               r.push((2<<i)-1) ;
+         } else
+            r.push(1<<i) ;
       }
       return r ;
    },
@@ -1215,18 +1224,19 @@ PuzzleGeometry.prototype = {
          bits = nbits ;
          inverted++ ;
       }
-      // for now we only handle single slice moves; we need to add block moves
-      if (bits & (bits - 1))
-         throw "We only support move names that are single slices right now" ;
       var movename = geo[0] ;
-      if (bits > 1) {
-         var prefix = 1 ;
-         while (bits > 1) {
-            bits >>= 1 ;
-            prefix++ ;
-         }
-         movename = prefix + movename ;
-      }
+      var hibit = 0 ;
+      while (bits >> (1 + hibit))
+         hibit++ ;
+      if (bits == (1 << hibit)) {
+         if (hibit > 0)
+            movename = (hibit + 1) + movename ;
+      } else if (bits == ((2 << hibit) - 1)) {
+         movename = movename.toLowerCase() ;
+         if (hibit > 1)
+            movename = (hibit + 1) + movename ;
+      } else
+         throw "We only support slice and outer block moves right now. " + bits ;
       return [movename, inverted] ;
    },
    writeksolve: // write ksolve; mirrored off original q.pl
@@ -1243,7 +1253,7 @@ PuzzleGeometry.prototype = {
          var moveset = this.getmovesets(k) ;
          var allbits = 0 ;
          for (var i=0; i<moveset.length; i++)
-            allbits |=moveset[i] ;
+            allbits |= moveset[i] ;
          if (moveset.length == 0)
             throw "Bad moveset length in writeksolve" ;
          var axiscmoves = this.cmovesbyslice[k] ;
@@ -1312,7 +1322,7 @@ PuzzleGeometry.prototype = {
                   continue ;
                var slicecmoves = axiscmoves[m] ;
                for (var j=0; j<slicecmoves.length; j++) {
-                  var mperm = slicecmoves[j] ;
+                  var mperm = slicecmoves[j].slice() ;
                   var setnum = this.cubiesetnums[mperm[0]] ;
                   for (var ii=0; ii<mperm.length; ii += 2)
                      mperm[ii] = this.cubieordnums[mperm[ii]] ;
@@ -1831,6 +1841,10 @@ if (typeof(process) !== 'undefined' &&
          optionlist.push('doss', true) ;
       } else if (option == "--allmoves") {
          optionlist.push('allmoves', true) ;
+      } else if (option == "--outerblockmoves") {
+         optionlist.push('outerblockmoves', true) ;
+      } else if (option == "--vertexmoves") {
+         optionlist.push('vertexmoves', true) ;
       } else {
          throw "Bad option: " + option ;
       }
