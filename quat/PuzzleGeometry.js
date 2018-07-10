@@ -415,6 +415,12 @@ function PuzzleGeometry(shape, cuts, optionlist) {
             this.outerblockmoves = optionlist[i+1] ;
          else if (optionlist[i] == "vertexmoves")
             this.vertexmoves = optionlist[i+1] ;
+         else if (optionlist[i] == "cornersets")
+            this.cornersets = optionlist[i+1] ;
+         else if (optionlist[i] == "centersets")
+            this.centersets = optionlist[i+1] ;
+         else if (optionlist[i] == "edgesets")
+            this.edgesets = optionlist[i+1] ;
          else
             throw "Bad option while processing option list " + optionlist[i] ;
       }
@@ -464,6 +470,9 @@ PuzzleGeometry.prototype = {
    outerblockmoves: false, // generate outer block moves
    vertexmoves: false, // generate vertex moves
    movelist: undefined, // move list to generate
+   cornersets: true,   // include corner sets
+   centersets: true,   // include center sets
+   edgesets: true,     // include edge sets
 //
 // This is a description of the nets and the external names we give each
 // face.  The names should be single-character upper-case alpahbetics so
@@ -1195,6 +1204,27 @@ PuzzleGeometry.prototype = {
       }
       return r ;
    },
+   skipbyori:
+   function(cubie) {
+      var ori = this.cubies[cubie].length ;
+      return ((ori == 1 && !this.centersets) ||
+              (ori == 2 && !this.edgesets) ||
+              (ori > 2 && !this.cornersets)) ;
+   },
+   skipcubie:
+   function(set) {
+      if (set.length == 0)
+         return true ;
+      var fi = set[0] ;
+      return this.skipbyori(fi) ;
+   },
+   skipset:
+   function(set) {
+      if (set.length == 0)
+         return true ;
+      var fi = set[0] ;
+      return this.skipbyori(this.facetocubies[fi][0]) ;
+   },
    writegap: // write out a gap set of generators
    function() {
       var perms = [] ;
@@ -1213,18 +1243,22 @@ PuzzleGeometry.prototype = {
                   continue ;
                var slicemoves = axismoves[ii] ;
                for (var j=0; j<slicemoves.length; j++) {
+                  if (this.skipset(slicemoves[j]))
+                     continue ;
                   var mperm = slicemoves[j].map(function(_) { return _+1 }) ;
                   order = mperm.length ;
                   move = move + "(" + mperm.join(",") + ")" ;
                }
             }
-            var movename = 'M'+movenum ;
-            console.log(movename+':='+move+";") ;
-            perms.push(movename) ;
-            for (var j=2; j<order; j++) {
-               perms.push(movename + '^' + j) ;
+            if (order > 0) {
+               var movename = 'M'+movenum ;
+               console.log(movename+':='+move+";") ;
+               perms.push(movename) ;
+               for (var j=2; j<order; j++) {
+                  perms.push(movename + '^' + j) ;
+               }
+               movenum++ ;
             }
-            movenum++ ;
          }
       }
       console.log("Gen:=[") ;
@@ -1283,6 +1317,8 @@ PuzzleGeometry.prototype = {
                continue ;
             var slicecmoves = axiscmoves[i] ;
             for (var j=0; j<slicecmoves.length; j++) {
+               if (this.skipcubie(slicecmoves[j]))
+                  continue ;
                var ind = this.cubiesetnums[slicecmoves[j][0]] ;
                if (!setmoves[ind])
                   setmoves[ind] = 1 ;
@@ -1323,7 +1359,8 @@ PuzzleGeometry.prototype = {
             var mna = this.getmovename(movesetgeo, movebits, slices) ;
             var movename = mna[0] ;
             var inverted = mna[1] ;
-            result.push("Move " + movename) ;
+            var movedat = [] ;
+            movedat.push("Move " + movename) ;
             movenames.push(movename) ;
             var perms = [] ;
             var oris = [] ;
@@ -1380,16 +1417,20 @@ PuzzleGeometry.prototype = {
                      }
                if (!needed && !needori)
                   continue ;
-               result.push(this.cubiesetname[ii]) ;
+               movedat.push(this.cubiesetname[ii]) ;
                var r = [] ;
                for (var kk=0; kk<perms[ii].length; kk++)
                   r.push(perms[ii][kk]+1) ;
-               result.push(r.join(" ")) ;
+               movedat.push(r.join(" ")) ;
                if (this.orbitoris[ii] > 1 && needori)
-                  result.push(oris[ii].join(" ")) ;
+                  movedat.push(oris[ii].join(" ")) ;
             }
-            result.push("End") ;
-            result.push("") ;
+            movedat.push("End") ;
+            if (movedat.length > 2) {
+               for (var ii=0; ii<movedat.length; ii++)
+                  result.push(movedat[ii]) ;
+               result.push("") ;
+            }
          }
       }
       this.ksolvemovenames = movenames ; // hack!
@@ -1866,6 +1907,12 @@ if (typeof(process) !== 'undefined' &&
          optionlist.push('outerblockmoves', true) ;
       } else if (option == "--vertexmoves") {
          optionlist.push('vertexmoves', true) ;
+      } else if (option == "--nocorners") {
+         optionlist.push('cornersets', false) ;
+      } else if (option == "--noedges") {
+         optionlist.push('edgesets', false) ;
+      } else if (option == "--nocenters") {
+         optionlist.push('centersets', false) ;
       } else {
          throw "Bad option: " + option ;
       }
