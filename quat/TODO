@@ -15,12 +15,6 @@ Eliminate moves:
    --fixcenter     -- fix the first center
    --fixcenters    -- fix all centers
 
-   allmoves: false,   // generate all slice moves in ksolve
-   outerblockmoves: false, // generate outer block moves
-   vertexmoves: false, // generate vertex moves
-   movelist: undef,   // move list to generate
-
-
 Then for move selection we want to be able to do the following types
 of things:
 

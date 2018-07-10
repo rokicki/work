@@ -836,7 +836,7 @@ PuzzleGeometry.prototype = {
       return [x1, y1, off] ;
    },
    allstickers: // next step is to calculate all the stickers and orbits
-   // We do enough work here to display the cube on the screen.
+                // We do enough work here to display the cube on the screen.
    function() {
       // take our newly split base face and expand it by the rotation matrix.
       // this generates our full set of "stickers".
@@ -1071,6 +1071,8 @@ PuzzleGeometry.prototype = {
    },
    genperms: // generate permutations for moves
    function() {
+      if (this.cmovesbyslice.length > 0) // did this already?
+         return ;
       var mvcnt = 0 ;
       var movesbyslice = [] ;
       var cmovesbyslice = [] ;
@@ -1161,6 +1163,25 @@ PuzzleGeometry.prototype = {
       if (slices > 30)
          throw "Too many slices for getmovesets bitmasks" ;
       var r = [] ;
+      if (this.vertexmoves && !this.allmoves) {
+         var msg = this.movesetgeos[k] ;
+         if (msg[1] != msg[3]) {
+            for (var i=0; i<slices; i++) {
+               if (msg[1] != 'v') {
+                  if (this.outerblockmoves)
+                     r.push((2 << slices) - (2 << i)) ;
+                  else
+                     r.push(2<<i) ;
+               } else {
+                  if (this.outerblockmoves)
+                     r.push((2<<i)-1) ;
+                  else
+                     r.push(1<<i) ;
+               }
+            }
+            return r ;
+         }
+      }
       for (var i=0; i<=slices; i++) {
          if (!this.allmoves && i + i == slices)
             continue ;
