@@ -404,6 +404,8 @@ function PuzzleGeometry(shape, cuts, optionlist) {
             this.doksolve = optionlist[i+1] ;
          else if (optionlist[i] == "doss")
             this.doss = optionlist[i+1] ;
+         else if (optionlist[i] == "docanon")
+            this.docanon = optionlist[i+1] ;
          else if (optionlist[i] == "dosvg") {
             this.verbose = 0 ;
             this.dosvg = optionlist[i+1] ;
@@ -465,6 +467,7 @@ PuzzleGeometry.prototype = {
 // options
    doksolve: false,   // generate ksolve
    doss: false,       // do schreier-sims
+   docanon: false,    // show canonical move info
    dosvg: false,      // generate svg
    dogap: false,      // generate gap
    verbose: 1,        // verbosity (console.log)
@@ -1523,6 +1526,52 @@ PuzzleGeometry.prototype = {
       }
       return r ;
    },
+   showcanon: // show information for canonical move derivation
+   function() {
+      var g = this.getcookedmoveperms() ;
+      var n = g.length ;
+      if (n > 30)
+         throw "Canon info too big for bitmask" ;
+      var orders = [] ;
+      var commutes = [] ;
+      for (var i=0; i<g.length; i++) {
+         orders.push(g[i][5]) ;
+         var permA = g[i][0] ;
+         var bits = 0 ;
+         for (var j=0; j<g.length; j++) {
+            if (j == i)
+               continue ;
+            var permB = g[j][0] ;
+            if (permA.mul(permB).compareTo(permB.mul(permA)) == 0) {
+               bits |= 1<<j ;
+            }
+         }
+         commutes.push(bits) ;
+      }
+      var curlev = {} ;
+      curlev[0] = 1 ;
+      for (var d=0; d<100; d++) {
+         var sum = 0 ;
+         var nextlev = {} ;
+         var uniq = 0 ;
+         for (var st in curlev) {
+            var cnt = curlev[st] ;
+            sum += cnt ;
+            uniq++ ;
+            for (var mv=0; mv<orders.length; mv++) {
+               if (((st >> mv) & 1) == 0 &&
+                   (st & commutes[mv] & ((1 << mv) - 1)) == 0) {
+                  var nst = (st & commutes[mv]) | (1 << mv) ;
+                  if (nextlev[nst] == undefined)
+                     nextlev[nst] = 0 ;
+                  nextlev[nst] += (orders[mv]-1) * cnt ;
+               }
+            }
+         }
+         console.log("At depth " + d + " canonseq " + sum + " states " + uniq) ;
+         curlev = nextlev ;
+      }
+   },
    getsolved: // get a solved position
    function() {
       var r = [] ;
@@ -1945,6 +1994,8 @@ if (typeof(process) !== 'undefined' &&
          optionlist.push('doksolve', true) ;
       } else if (option == "--ss") {
          optionlist.push('doss', true) ;
+      } else if (option == "--canon") {
+         optionlist.push('docanon', true) ;
       } else if (option == "--allmoves") {
          optionlist.push('allmoves', true) ;
       } else if (option == "--outerblockmoves") {
@@ -2000,5 +2051,7 @@ if (typeof(process) !== 'undefined' &&
       var moves = pg.getcookedmoveperms() ;
       var g = moves.map(function(m){return m[0]}) ;
       schreiersims(g) ;
+   } else if (pg.docanon) {
+      pg.showcanon() ;
    }
 }
