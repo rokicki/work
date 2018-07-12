@@ -1,14 +1,14 @@
 Intended command-line usage:
 
 Pick slices:
-   --all           -- all (slice) moves, for a UI, including centers
-   --outerblock    -- outer block turn moves only
-   --vertex        -- vertex moves only (for tetrahedron)
+X  --all           -- all (slice) moves, for a UI, including centers
+X  --outerblock    -- outer block turn moves only
+X  --vertex        -- vertex moves only (for tetrahedron)
    --moves U,R,F   -- see below; pick specific moves
 Eliminate moves:
-   --nocorners     -- kill any corner sets
-   --noedges       -- kill any edge sets
-   --nocenters     -- kill any center sets
+X  --nocorners     -- kill any corner sets
+X  --noedges       -- kill any edge sets
+X  --nocenters     -- kill any center sets
    --fixcorner     -- fix the first corner
    --fixcorners    -- fix all corners
    --fixedge       -- fix the first edge

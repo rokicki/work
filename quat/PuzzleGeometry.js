@@ -1014,6 +1014,9 @@ PuzzleGeometry.prototype = {
          }
       }
       // make the first face of each cubie be the least.
+      // when we start permitting multiple faces to be the same color,
+      // this code will need to be improved to properly sort RRG vs
+      // RGR.
       for (var k=0; k<cubies.length; k++) {
          var cubie = cubies[k] ;
          if (cubie.length < 2)
